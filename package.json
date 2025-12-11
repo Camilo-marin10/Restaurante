@@ -10,14 +10,21 @@
     "express": "^4.18.3",
     "express-validator": "^7.3.1",
     "mysql2": "^3.15.3",
+    "nodemailer": "^7.0.11",
     "pug": "^3.0.3",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "uuid": "^13.0.0"
   },
   "scripts": {
-    "dev": "node ./node_modules/nodemon/bin/nodemon.js index.js"
+    "dev": "node ./node_modules/nodemon/bin/nodemon.js index.js",
+    "css": "tailwindcss build -i public/css/tailwind.css -o public/css/styles.css --watch",
+    "js": "echo 'Script de JS pendiente de configurar'",
+    "styles": "concurrently \"npm run css\" \"npm run js\"",
+    "start": "node index.js"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.22",
+    "concurrently": "^9.2.1",
     "nodemon": "^3.1.11",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.14"
