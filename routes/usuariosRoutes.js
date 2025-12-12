@@ -8,7 +8,7 @@ import {
   solicitarResetPassword,
   comprobarToken,
   nuevoPassword,
-  confirmar, // <<-- 1. IMPORTAR FUNCIÓN
+  confirmar,
 } from "../controllers/usuariosController.js";
 
 const router = express.Router();
@@ -22,12 +22,12 @@ router.get("/registro", register);
 router.post("/registro", registrar);
 
 // Confirmación de Cuenta
-router.get("/confirmar/:token", confirmar); // <<-- 2. AÑADIR RUTA GET
+router.get("/confirmar/:token", confirmar);
 
 // Olvide Password
 router.get("/olvide-password", olvidePassword);
 router.post("/olvide-password", solicitarResetPassword);
-router.get("/olvide-password/:token", comprobarToken); // Verifica el token de recuperación
-router.post("/olvide-password/:token", nuevoPassword); // Guarda el nuevo password
+router.get("/olvide-password/:token", comprobarToken);
+router.post("/olvide-password/:token", nuevoPassword);
 
 export default router;

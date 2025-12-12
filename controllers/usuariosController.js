@@ -4,40 +4,14 @@ import { generarId } from "../helpers/tokens.js";
 import { emailRegistro, emailOlvidePassword } from "../helpers/emails.js";
 import bcrypt from "bcryptjs";
 
-// ==========================================================
-//                      VISTAS GET
-// ==========================================================
-
 const login = (req, res) => {
   res.render("auth/login", {
     titulo: "Inicia Sesión",
     csrfToken: req.csrfToken(),
     email: req.body.email || "",
-    autenticacion: true, // 🚨 Oculta el header-app
+    autenticacion: true,
   });
 };
-
-const register = (req, res) => {
-  res.render("auth/register", {
-    titulo: "Crea tu Cuenta",
-    csrfToken: req.csrfToken(),
-    usuario: {},
-    autenticacion: true, // 🚨 Oculta el header-app
-  });
-};
-
-const olvidePassword = (req, res) => {
-  res.render("auth/olvide-password", {
-    titulo: "Recupera tu Acceso",
-    csrfToken: req.csrfToken(),
-    email: "",
-    autenticacion: true, // 🚨 Oculta el header-app
-  });
-};
-
-// ==========================================================
-//                 AUTENTICACIÓN Y REGISTRO POST
-// ==========================================================
 
 const autenticar = async (req, res) => {
   await check("email")
@@ -52,7 +26,6 @@ const autenticar = async (req, res) => {
   const errores = validationResult(req);
   const { email, password } = req.body;
 
-  // 1. Mostrar Errores de validación
   if (!errores.isEmpty()) {
     return res.render("auth/login", {
       titulo: "Inicia Sesión",
@@ -63,7 +36,6 @@ const autenticar = async (req, res) => {
     });
   }
 
-  // 2. Comprobar si el usuario existe
   const usuario = await Usuario.findOne({ where: { email } });
 
   if (!usuario) {
@@ -76,7 +48,6 @@ const autenticar = async (req, res) => {
     });
   }
 
-  // 3. Comprobar si el usuario está confirmado
   if (!usuario.confirmado) {
     return res.render("auth/login", {
       titulo: "Inicia Sesión",
@@ -87,7 +58,6 @@ const autenticar = async (req, res) => {
     });
   }
 
-  // 4. Verificar password
   if (!usuario.verificarPassword(password)) {
     return res.render("auth/login", {
       titulo: "Inicia Sesión",
@@ -98,13 +68,39 @@ const autenticar = async (req, res) => {
     });
   }
 
-  // 5. Autenticar el usuario (PENDIENTE: Generar JWT/Sesión)
-  // Por ahora, solo redirigimos:
-  res.redirect("/");
+  req.session.usuarioId = usuario.id;
+
+  if (usuario.rol === "admin") {
+    return res.redirect("/");
+  } else {
+    return res.redirect("/usuario/dashboard");
+  }
+};
+const cerrarSesion = (req, res) => {
+  req.session.destroy(() => {
+    res.redirect("/auth/login");
+  });
+};
+
+const register = (req, res) => {
+  res.render("auth/register", {
+    titulo: "Crea tu Cuenta",
+    csrfToken: req.csrfToken(),
+    usuario: {},
+    autenticacion: true,
+  });
+};
+
+const olvidePassword = (req, res) => {
+  res.render("auth/olvide-password", {
+    titulo: "Recupera tu Acceso",
+    csrfToken: req.csrfToken(),
+    email: "",
+    autenticacion: true,
+  });
 };
 
 const registrar = async (req, res) => {
-  // 1. Validaciones
   await check("nombre")
     .notEmpty()
     .withMessage("El nombre es obligatorio")
@@ -121,7 +117,6 @@ const registrar = async (req, res) => {
 
   let errores = validationResult(req);
 
-  // 2. Manejo de Errores de validación
   if (!errores.isEmpty()) {
     return res.render("auth/register", {
       titulo: "Crea tu Cuenta",
@@ -134,7 +129,6 @@ const registrar = async (req, res) => {
 
   const { nombre, email, password } = req.body;
 
-  // 3. Verificar si el usuario ya existe
   const existeUsuario = await Usuario.findOne({ where: { email } });
   if (existeUsuario) {
     return res.render("auth/register", {
@@ -146,7 +140,6 @@ const registrar = async (req, res) => {
     });
   }
 
-  // 4. Almacenar el usuario
   try {
     const usuario = await Usuario.create({
       nombre,
@@ -156,20 +149,19 @@ const registrar = async (req, res) => {
       confirmado: false,
     });
 
-    // 5. Enviar email de confirmación
     emailRegistro({
       nombre: usuario.nombre,
       email: usuario.email,
       token: usuario.token,
     });
 
-    // 6. Mostrar mensaje de éxito
     res.render("templates/mensaje", {
       titulo: "Cuenta Creada Correctamente",
       mensaje:
         "Hemos enviado un Email de Confirmación a tu correo. Por favor, revísalo para activarla.",
       enlace: "/auth/login",
       btn: "Ir a Iniciar Sesión",
+      autenticacion: true,
     });
   } catch (error) {
     console.error("Error al guardar el usuario en la DB:", error);
@@ -187,17 +179,10 @@ const registrar = async (req, res) => {
   }
 };
 
-// ==========================================================
-//                 CONFIRMACIÓN DE CUENTA (SOLUCIÓN AL ERROR)
-// ==========================================================
-
 const confirmar = async (req, res) => {
   const { token } = req.params;
-
-  // 1. Verificar si el token es válido
   const usuario = await Usuario.findOne({ where: { token } });
 
-  // 2. Si el token no es válido o ya fue usado (usuario = null)
   if (!usuario) {
     return res.render("auth/confirmar-cuenta", {
       titulo: "Error al Confirmar Cuenta",
@@ -205,17 +190,14 @@ const confirmar = async (req, res) => {
       error: true,
       enlace: "/auth/registro",
       btn: "Crear otra cuenta",
+      autenticacion: true,
     });
   }
 
-  // 3. Si el token es válido:
-
-  // 4. Cambiar el estado del usuario
   usuario.confirmado = true;
-  usuario.token = null; // 🚨 ANULAR el token para prevenir el doble uso y el error de recarga
+  usuario.token = null;
   await usuario.save();
 
-  // 5. Mostrar mensaje de éxito
   res.render("auth/confirmar-cuenta", {
     titulo: "Cuenta Confirmada",
     mensaje:
@@ -223,12 +205,9 @@ const confirmar = async (req, res) => {
     error: false, // Éxito
     enlace: "/auth/login",
     btn: "Iniciar Sesión",
+    autenticacion: true,
   });
 };
-
-// ==========================================================
-//                 RECUPERACIÓN DE CONTRASEÑA
-// ==========================================================
 
 const solicitarResetPassword = async (req, res) => {
   await check("email")
@@ -258,8 +237,6 @@ const solicitarResetPassword = async (req, res) => {
       autenticacion: true,
     });
   }
-
-  // Generar un token y enviar email
   usuario.token = generarId();
   await usuario.save();
 
@@ -275,6 +252,7 @@ const solicitarResetPassword = async (req, res) => {
       "Hemos enviado un email con las instrucciones para restablecer tu contraseña.",
     enlace: "/auth/login",
     btn: "Ir a Iniciar Sesión",
+    autenticacion: true,
   });
 };
 
@@ -289,6 +267,7 @@ const comprobarToken = async (req, res) => {
       error: true,
       enlace: "/auth/olvide-password",
       btn: "Reintentar",
+      autenticacion: true,
     });
   }
 
@@ -296,6 +275,7 @@ const comprobarToken = async (req, res) => {
     titulo: "Establece tu Nueva Contraseña",
     csrfToken: req.csrfToken(),
     token: token,
+    autenticacion: true,
   });
 };
 
@@ -314,12 +294,11 @@ const nuevoPassword = async (req, res) => {
       csrfToken: req.csrfToken(),
       errores: errores.array(),
       token: token,
+      autenticacion: true,
     });
   }
 
   const usuario = await Usuario.findOne({ where: { token } });
-
-  // Hashear el nuevo password y guardar
   const salt = await bcrypt.genSalt(10);
   usuario.password = await bcrypt.hash(password, salt);
   usuario.token = null;
@@ -331,12 +310,14 @@ const nuevoPassword = async (req, res) => {
     mensaje: "Tu contraseña ha sido modificada correctamente.",
     enlace: "/auth/login",
     btn: "Ir a Iniciar Sesión",
+    autenticacion: true,
   });
 };
 
 export {
   login,
   autenticar,
+  cerrarSesion,
   register,
   registrar,
   confirmar,

@@ -1,0 +1,74 @@
+extends ../../layout/index
+
+block contenido
+    div(class="py-10")
+        h2(class="text-3xl font-bold text-gray-900 mb-6") #{titulo}
+        
+        // Mensajes de error de Express Validator/Validaciones de Disponibilidad
+        if errores
+            div(class="max-w-xl mx-auto")
+                each error in errores
+                    p(class="bg-red-500 text-white uppercase text-xs text-center p-2 mb-1 font-bold")= error.msg
+
+        div(class="bg-white shadow-lg py-8 px-4 rounded-lg mx-auto max-w-xl")
+            form(method="POST" action=`/admin/reservas/editar/${datos.id}`)
+                input(type="hidden" name="_csrf" value= csrfToken)
+                
+                // Campo ID de la reserva
+                input(type="hidden" name="id" value= datos.id)
+
+                // Selección de Cliente (Bloqueado/Solo lectura en Edición)
+                div(class="mb-4")
+                    label(class="block text-sm uppercase text-gray-500 mb-2 font-bold") Cliente
+                    // Mostrar el nombre completo y el teléfono del cliente asociado a la reserva
+                    p(class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md") #{datos.cliente.nombre} #{datos.cliente.apellido} (#{datos.cliente.telefono})
+                    // Campo oculto para enviar el ID del cliente (necesario para la edición)
+                    input(type="hidden" name="clienteId" value= datos.clienteId)
+
+                // Fecha y Hora
+                div(class="grid grid-cols-1 md:grid-cols-2 gap-4")
+                    div(class="mb-4")
+                        label(for="fecha_reserva" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Fecha
+                        // Importante: En la edición, la fecha_reserva ya es un string, no necesita ser formateada aquí
+                        input(id="fecha_reserva" name="fecha_reserva" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400" value= datos.fecha_reserva)
+
+                    div(class="mb-4")
+                        label(for="hora_reserva" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Hora
+                        input(id="hora_reserva" name="hora_reserva" type="time" class="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400" value= datos.hora_reserva)
+                
+                // Personas y Duración
+                div(class="grid grid-cols-1 md:grid-cols-2 gap-4")
+                    div(class="mb-4")
+                        label(for="numero_personas" class="block text-sm uppercase text-gray-500 mb-2 font-bold") No. Personas
+                        input(id="numero_personas" name="numero_personas" type="number" min="1" placeholder="Ej. 4" class="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400" value= datos.numero_personas)
+                    
+                    div(class="mb-4")
+                        label(for="duracion_estimada" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Duración Estimada
+                        select(id="duracion_estimada" name="duracion_estimada" class="w-full px-3 py-2 border border-gray-300 rounded-md")
+                            each duracion in duraciones
+                                option(value=duracion.valor selected= datos.duracion_estimada == duracion.valor ? true : false)= duracion.texto
+
+                // Selección de Mesa
+                div(class="mb-4")
+                    label(for="mesaId" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Mesa Asignada
+                    select(id="mesaId" name="mesaId" class="w-full px-3 py-2 border border-gray-300 rounded-md")
+                        option(value="") -- Seleccionar Mesa --
+                        each mesa in mesas
+                            option(value=mesa.id selected= datos.mesaId == mesa.id ? true : false)= mesa.nombre + ' (Capacidad: ' + mesa.capacidad + ')'
+                        if mesas.length === 0
+                            option(value="" disabled) No hay mesas activas.
+
+                // Estado de la Reserva (Campo CRUD más importante en la edición)
+                div(class="mb-4")
+                    label(for="estado" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Estado de la Reserva
+                    select(id="estado" name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-md")
+                        // Estados posibles: Pendiente, Confirmada, En Curso, Completada, Cancelada, No-Show
+                        - const estados = ['Pendiente', 'Confirmada', 'En Curso', 'Completada', 'Cancelada', 'No-Show']
+                        each estadoOpt in estados
+                            option(value=estadoOpt selected= datos.estado === estadoOpt ? true : false)= estadoOpt
+                
+                div(class="mb-4")
+                    label(for="notas" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Notas de la Reserva (Opcional)
+                    textarea(id="notas" name="notas" placeholder="Solicitud especial, razón de la reserva, etc." class="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400")= datos.notas
+
+                input(type="submit" value="Guardar Cambios de Reserva" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 cursor-pointer rounded-md uppercase transition duration-300")

@@ -17,6 +17,11 @@ const Usuario = db.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    rol: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: "usuario",
+    },
     token: DataTypes.STRING,
     confirmado: DataTypes.BOOLEAN,
   },
@@ -37,7 +42,6 @@ const Usuario = db.define(
   }
 );
 
-// Metodo Personalizado
 Usuario.prototype.verificarPassword = function (password) {
   return bcrypt.compareSync(password, this.password);
 };
