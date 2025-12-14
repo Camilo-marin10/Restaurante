@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 import db from "../config/db.js";
-import Cliente from "./Cliente.js";
+import Usuario from "./Usuarios.js";
 import Mesa from "./Mesa.js";
 
 const Reserva = db.define("reservas", {
@@ -41,7 +41,7 @@ const Reserva = db.define("reservas", {
   },
 });
 
-Reserva.belongsTo(Cliente, { foreignKey: "clienteId", as: "cliente" });
+Reserva.belongsTo(Usuario, { foreignKey: "clienteId", as: "cliente" });
 Reserva.belongsTo(Mesa, { foreignKey: "mesaId", as: "mesa" });
 
 export default Reserva;

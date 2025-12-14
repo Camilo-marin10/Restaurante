@@ -10,13 +10,11 @@ const identificarUsuario = async (req, res, next) => {
   }
 
   try {
-    // 1. 🛑 CORRECCIÓN: Incluir 'rol' en los atributos de la consulta
     const usuarioSesion = await Usuario.findByPk(usuarioId, {
       attributes: ["id", "nombre", "rol"],
     });
 
     if (usuarioSesion) {
-      // 2. 🛑 CORRECCIÓN: Asignar 'rol' al objeto res.locals.usuario
       res.locals.usuario = {
         nombre: usuarioSesion.nombre,
         id: usuarioSesion.id,

@@ -1,24 +1,21 @@
 import express from "express";
 import csurf from "csurf";
 import cookieParser from "cookie-parser";
-
 import session from "express-session";
-
 import usuarioRoutes from "./routes/usuariosRoutes.js";
 import dashboardRoutes from "./routes/admin/dashboardRoutes.js";
 import mesasRoutes from "./routes/admin/mesasRoutes.js";
 import clientesRoutes from "./routes/admin/clientesRoutes.js";
 import reservasRoutes from "./routes/admin/reservasRoutes.js";
-// 🚨 NUEVA IMPORTACIÓN PARA RUTAS DE USUARIO ESTÁNDAR 🚨
 import usuarioDashboardRoutes from "./routes/usuarioDashboardRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import { identificarUsuario } from "./middleware/usuarioMiddleware.js";
-
 import db from "./config/db.js";
 
 const app = express();
 
 try {
-  await db.authenticate(); // 🚨 NOTA IMPORTANTE: Remover { alter: true } después de la primera ejecución exitosa // para no ralentizar el servidor y evitar posibles problemas en producción.
+  await db.authenticate();
   await db.sync({ alter: true });
   console.log("Conexion correcta a la base de datos");
 } catch (error) {
@@ -26,34 +23,36 @@ try {
 }
 
 app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser());
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "alguna_clave_secreta_muy_larga",
+    secret: process.env.SESSION_SECRET || "Cmz23102005_!!",
     resave: false,
     saveUninitialized: false,
   })
 );
 
 app.use(csurf({ cookie: true }));
+
 app.use(identificarUsuario);
 
-// habilitar pug
 app.set("view engine", "pug");
 app.set("views", "./views");
 
 app.use(express.static("public"));
 
-// routing
 app.use("/auth", usuarioRoutes);
+
+app.use("/usuario", usuarioDashboardRoutes);
+
 app.use("/admin", dashboardRoutes);
 app.use("/admin/mesas", mesasRoutes);
 app.use("/admin/clientes", clientesRoutes);
 app.use("/admin/reservas", reservasRoutes);
-// 🚨 RUTA NUEVA PARA EL PANEL DE USUARIO ESTÁNDAR 🚨
-app.use("/usuario", usuarioDashboardRoutes);
-app.use("/", dashboardRoutes);
+
+app.use("/", adminRoutes);
 
 const port = process.env.PORT || 3000;
 

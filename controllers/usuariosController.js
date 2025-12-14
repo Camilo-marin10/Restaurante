@@ -13,6 +13,24 @@ const login = (req, res) => {
   });
 };
 
+const register = (req, res) => {
+  res.render("auth/register", {
+    titulo: "Crea tu Cuenta",
+    csrfToken: req.csrfToken(),
+    usuario: {},
+    autenticacion: true,
+  });
+};
+
+const olvidePassword = (req, res) => {
+  res.render("auth/olvide-password", {
+    titulo: "Recupera tu Acceso",
+    csrfToken: req.csrfToken(),
+    email: "",
+    autenticacion: true,
+  });
+};
+
 const autenticar = async (req, res) => {
   await check("email")
     .isEmail()
@@ -71,32 +89,15 @@ const autenticar = async (req, res) => {
   req.session.usuarioId = usuario.id;
 
   if (usuario.rol === "admin") {
-    return res.redirect("/");
+    return res.redirect("/admin/dashboard");
   } else {
     return res.redirect("/usuario/dashboard");
   }
 };
+
 const cerrarSesion = (req, res) => {
   req.session.destroy(() => {
     res.redirect("/auth/login");
-  });
-};
-
-const register = (req, res) => {
-  res.render("auth/register", {
-    titulo: "Crea tu Cuenta",
-    csrfToken: req.csrfToken(),
-    usuario: {},
-    autenticacion: true,
-  });
-};
-
-const olvidePassword = (req, res) => {
-  res.render("auth/olvide-password", {
-    titulo: "Recupera tu Acceso",
-    csrfToken: req.csrfToken(),
-    email: "",
-    autenticacion: true,
   });
 };
 
@@ -147,6 +148,7 @@ const registrar = async (req, res) => {
       password,
       token: generarId(),
       confirmado: false,
+      rol: "cliente",
     });
 
     emailRegistro({
@@ -188,7 +190,7 @@ const confirmar = async (req, res) => {
       titulo: "Error al Confirmar Cuenta",
       mensaje: "El token no es válido o ya ha expirado.",
       error: true,
-      enlace: "/auth/registro",
+      enlace: "/auth/register",
       btn: "Crear otra cuenta",
       autenticacion: true,
     });
@@ -202,7 +204,7 @@ const confirmar = async (req, res) => {
     titulo: "Cuenta Confirmada",
     mensaje:
       "Tu cuenta ha sido confirmada correctamente. Ya puedes iniciar sesión.",
-    error: false, // Éxito
+    error: false,
     enlace: "/auth/login",
     btn: "Iniciar Sesión",
     autenticacion: true,

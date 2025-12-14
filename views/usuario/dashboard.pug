@@ -1,31 +1,78 @@
 extends ../layout/index
 
 block contenido
-    div(class="py-10 px-4 sm:px-6 lg:px-8")
-        h1(class="text-3xl font-extrabold text-gray-900 mb-6") RESTAURANTE SENA
+    div(class="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50") 
+        h1(class="text-4xl font-extrabold text-red-800 mb-2 tracking-tight") Panel de Usuario
         
         if usuario
-            p(class="text-lg text-gray-700")
+            p(class="text-xl text-gray-700 mb-8")
                 | ¡Bienvenido de nuevo, 
-                span(class="font-bold")= usuario.nombre
-                |! 
-            p(class="text-md text-gray-500") Revisa tus reservas o haz una nueva.
-
+                span(class="font-extrabold text-red-700")= usuario.nombre
+                |! Estamos listos para recibirte. 
+            
             div(class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3")
+                
                 a(href="/usuario/reserva/crear")
-                    div(class="bg-white p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 cursor-pointer")
-                        h2(class="text-xl font-semibold text-indigo-600") Nueva Reserva
-                        p(class="mt-2 text-gray-500") Reserva una mesa para la fecha y hora que desees.
+                    div(class="bg-white p-6 rounded-xl shadow-2xl hover:shadow-red-300 transition duration-500 transform hover:scale-105 cursor-pointer border-t-4 border-red-600 animate-fade-in")
+                        div(class="flex items-center space-x-3")
+                            span(class="text-red-600 text-3xl") 
+                            h2(class="text-2xl font-bold text-red-700") Reserva una Mesa
+                        p(class="mt-3 text-gray-600") ¡Asegura tu lugar! Haz una reserva para la fecha y hora que desees.
 
                 a(href="/usuario/mis-reservas")
-                    div(class="bg-white p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 cursor-pointer")
-                        h2(class="text-xl font-semibold text-green-600") Mis Reservas
-                        p(class="mt-2 text-gray-500") Consulta el estado, modifica o cancela tus reservas existentes.
+                    div(class="bg-white p-6 rounded-xl shadow-xl hover:shadow-orange-300 transition duration-500 transform hover:scale-105 cursor-pointer border-t-4 border-orange-500 animate-fade-in delay-100")
+                        div(class="flex items-center space-x-3")
+                            span(class="text-orange-600 text-3xl") 
+                            h2(class="text-2xl font-bold text-orange-700") Mis Reservas Activas
+                        p(class="mt-3 text-gray-600") Consulta el estado, modifica o cancela tus reservas existentes.
 
-                a(href="#")
-                    div(class="bg-white p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 cursor-pointer")
-                        h2(class="text-xl font-semibold text-yellow-600") Historial
-                        p(class="mt-2 text-gray-500") Revisa tus visitas pasadas.
+                a(href="/usuario/historial") 
+                    div(class="bg-white p-6 rounded-xl shadow-xl hover:shadow-gray-300 transition duration-500 transform hover:scale-105 cursor-pointer border-t-4 border-gray-400 animate-fade-in delay-200")
+                        div(class="flex items-center space-x-3")
+                            span(class="text-gray-600 text-3xl") 
+                            h2(class="text-2xl font-bold text-gray-700") Historial de Visitas
+                        p(class="mt-3 text-gray-600") Revisa el registro de tus visitas pasadas y complétanos.
+            
+            
+            div(class="mt-12 bg-white p-6 rounded-2xl shadow-2xl border border-gray-100")
+                h2(class="text-2xl font-extrabold text-gray-800 border-b-2 border-orange-100 pb-3 mb-4 flex items-center") 
+                    span(class="mr-3 text-orange-500") 
+                    | Tu Mesa para Hoy
+                
+                if reservasHoyUsuario && reservasHoyUsuario.length
+                    div(class="overflow-x-auto")
+                        table(class="min-w-full divide-y divide-gray-200")
+                            thead(class="bg-orange-50")
+                                tr
+                                    th(class="px-6 py-3 text-left text-xs font-bold text-orange-700 uppercase tracking-wider") Hora
+                                    th(class="px-6 py-3 text-left text-xs font-bold text-orange-700 uppercase tracking-wider") Personas
+                                    th(class="px-6 py-3 text-left text-xs font-bold text-orange-700 uppercase tracking-wider") Mesa Asignada
+                                    th(class="px-6 py-3 text-left text-xs font-bold text-orange-700 uppercase tracking-wider") Estado
+                                    th(class="px-6 py-3 text-left text-xs font-bold text-orange-700 uppercase tracking-wider") Gestión
+                            
+                            tbody(class="bg-white divide-y divide-gray-100")
+                                each reserva in reservasHoyUsuario
+                                    tr(class="hover:bg-yellow-50 transition duration-150")
+                                        td(class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900")= reserva.hora_reserva.substring(0, 5) 
+                                        td(class="px-6 py-4 whitespace-nowrap text-sm text-gray-600")= reserva.numero_personas
+                                        td(class="px-6 py-4 whitespace-nowrap text-sm text-gray-600")= reserva.mesa ? reserva.mesa.nombre : 'Por asignar'
+                                        
+                                        td(class="px-6 py-4 whitespace-nowrap")
+                                            - const estadoClase = reserva.estado === 'Confirmada' ? 'bg-green-100 text-green-800' : reserva.estado === 'En Curso' ? 'bg-red-100 text-red-800' : reserva.estado === 'Completada' ? 'bg-gray-200 text-gray-700' : 'bg-amber-100 text-amber-800'
+                                            span(class=`${estadoClase} px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full shadow-sm`) #{reserva.estado}
+                                        
+                                        td(class="px-6 py-4 whitespace-nowrap text-sm font-medium")
+                                            if reserva.estado === 'Confirmada' || reserva.estado === 'Pendiente'
+                                                form(method="POST" action=`/usuario/reserva/cancelar/${reserva.id}` onsubmit="return confirm(' ¿Estás seguro de que deseas cancelar esta reserva? Esta acción es irreversible.');" class="inline")
+                                                    input(type="hidden" name="_csrf" value=csrfToken)
+                                                    button(type="submit" class="text-red-600 hover:text-red-800 font-bold transition duration-200 transform hover:scale-105") Cancelar
+                                            else
+                                                p(class="text-gray-400 text-xs") No disponible
+
+                else
+                    div(class="text-center py-6")
+                        p(class="text-gray-500 text-lg") Aún no tienes reservas programadas para hoy.
+                        a(href="/usuario/reserva/crear" class="mt-3 inline-block text-red-600 font-bold hover:text-red-700 transition duration-200") ¡Haz tu primera reserva!
 
         else
             p(class="text-red-500") Debes iniciar sesión para ver este panel.

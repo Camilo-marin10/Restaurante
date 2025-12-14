@@ -1,39 +1,39 @@
 extends ../../layout/index
 
 block contenido
-    div(class="py-10")
-        h2(class="text-3xl font-bold text-gray-900 mb-6") #{titulo}
+    div(class="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50")
+        h1(class="text-4xl font-extrabold text-red-800 mb-2 tracking-tight")= titulo
+        p(class="text-lg text-gray-700 mb-8 border-b pb-4") Edita los detalles y el estado de la mesa.
         
-        // Mensajes de error de Express Validator o de DB
         if errores
-            div(class="max-w-md mx-auto")
+            div(class="max-w-md mx-auto mb-6")
                 each error in errores
-                    p(class="bg-red-500 text-white uppercase text-xs text-center p-2 mb-1 font-bold")= error.msg
+                    p(class="bg-red-500 text-white uppercase text-xs text-center p-3 font-bold rounded-lg mb-1 shadow-md")= error.msg
 
-        div(class="bg-white shadow-lg py-8 px-4 rounded-lg mx-auto max-w-md")
+        div(class="bg-white shadow-2xl py-8 px-6 rounded-xl mx-auto max-w-md border-t-4 border-red-600")
             
-            form(method="POST")
+            form(method="POST" class="space-y-6")
                 input(type="hidden" name="_csrf" value= csrfToken)
 
-                div(class="mb-4")
-                    label(for="nombre" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Nombre/Número de Mesa
-                    input(id="nombre" name="nombre" type="text" placeholder="Ej. Mesa 5 o Terraza Principal" class="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400" value= datos.nombre ? datos.nombre : '')
+                div
+                    label(for="nombre" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Nombre/Número de Mesa
+                    input(id="nombre" name="nombre" type="text" placeholder="Ej. Mesa 5 o Terraza Principal" class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.nombre ? datos.nombre : '')
 
-                div(class="mb-4")
-                    label(for="capacidad" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Capacidad (personas)
-                    input(id="capacidad" name="capacidad" type="number" min="1" placeholder="Ej. 4" class="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400" value= datos.capacidad ? datos.capacidad : '')
+                div
+                    label(for="capacidad" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Capacidad (personas)
+                    input(id="capacidad" name="capacidad" type="number" min="1" placeholder="Ej. 4" class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.capacidad ? datos.capacidad : '')
 
-                div(class="mb-4")
-                    label(for="zona" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Zona
-                    select(id="zona" name="zona" class="w-full px-3 py-2 border border-gray-300 rounded-md")
+                div
+                    label(for="zona" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Zona
+                    select(id="zona" name="zona" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm")
                         option(value="") -- Seleccionar Zona --
                         each zonaOpt in zonas
                             option(value=zonaOpt selected= datos.zona === zonaOpt ? true : false)= zonaOpt
 
-                div(class="mb-4")
-                    label(for="estado" class="block text-sm uppercase text-gray-500 mb-2 font-bold") Estado
-                    select(id="estado" name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-md")
+                div
+                    label(for="estado" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Estado
+                    select(id="estado" name="estado" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm")
                         option(value="true" selected= datos.estado == true ? true : false) Activa
                         option(value="false" selected= datos.estado == false ? true : false) Inactiva
                 
-                input(type="submit" value="Guardar Cambios" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 cursor-pointer rounded-md uppercase transition duration-300")
+                input(type="submit" value="Guardar Cambios" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 cursor-pointer rounded-lg uppercase transition duration-300 shadow-lg transform hover:scale-[1.01]")

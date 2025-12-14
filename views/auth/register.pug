@@ -1,60 +1,62 @@
 extends ../layout/index
 
 block contenido
-    .py-10
-        h1.text-4xl.my-10.font-extrabold.text-center Bienes Raices 
-            span.font-normal SENA
-        h2.text-center.text-3xl.font-bold.text-indigo-600=tituloPagina
+    div(class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center")
+        div(class="max-w-md w-full")
+            h1(class="text-4xl my-10 font-extrabold text-center text-red-800") RESTAURANT
+                span(class="font-normal text-orange-600") ADMIN
+            h2(class="text-center text-3xl font-bold text-red-600")= tituloPagina
 
-        if errores
-            div(class="max-w-md mx-auto my-10")
-                each error in errores
-                    p.bg-red-500.text-white.uppercase.text-sm.text-center.p-3.mb-2.rounded-lg.font-semibold= error.msg
+            if errores
+                div(class="max-w-md mx-auto my-6")
+                    each error in errores
+                        p(class="bg-red-600 text-white uppercase text-sm text-center p-3 mb-2 rounded-lg font-semibold shadow-md")= error.msg
 
-        .mt-8.mx-auto.max-w-md
-            .bg-white.py-10.px-6.shadow-2xl.rounded-xl.border.border-gray-200 
-                form.space-y-6(action="/auth/registro", method="post")
-                    input(type="hidden" name="_csrf" value=csrfToken )
-                    div 
-                        label.block.text-sm.font-medium.text-gray-700.mb-2(for="nombre") Nombre
-                        input#nombre(
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" 
-                            placeholder="Tu Nombre" 
-                            type="text" 
-                            name="nombre" 
-                            value="#{usuario.nombre ? usuario.nombre : ''}"
-                        )
-                    
-                    div 
-                        label.block.text-sm.font-medium.text-gray-700.mb-2(for="email") Correo Electrónico
-                        input#email(
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" 
-                            placeholder="Tu Email de Registro" 
-                            type="email" 
-                            name="email" 
-                            value="#{usuario.email ? usuario.email : ''}"
-                        )
-                    
-                    div 
-                        label.block.text-sm.font-medium.text-gray-700.mb-2(for="password") Contraseña
-                        input#password(
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" 
-                            placeholder="Elige tu Contraseña" 
-                            type="password" 
-                            name="password"
-                        )
-                    
-                    div 
-                        label.block.text-sm.font-medium.text-gray-700.mb-2(for="repetir_password") Repetir Contraseña
-                        input#repetir_password(
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" 
-                            placeholder="Repite tu Contraseña" 
-                            type="password" 
-                            name="repetir_password"
-                        )
-                    
-                    .flex.items-center.justify-between.text-sm
-                        a(class=".font-medium.text-indigo-600.hover:text-indigo-500" href="/auth/login") ¿Ya tienes cuenta? Inicia Sesión
-                        a(class=".font-medium.text-gray-500.hover:text-gray-700" href="/auth/olvide-password") Olvidé mi Contraseña
+            div(class="mt-8 mx-auto max-w-md")
+                div(class="bg-white py-10 px-6 shadow-2xl rounded-xl border-t-4 border-red-600") 
+                    form(action="/auth/registro", method="post" class="space-y-6")
+                        input(type="hidden" name="_csrf" value=csrfToken )
+                        
+                        div 
+                            label(for="nombre" class="block text-sm font-medium text-gray-700 mb-2") Nombre
+                            input#nombre(
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-red-500 focus:border-red-500 shadow-sm" 
+                                placeholder="Tu Nombre" 
+                                type="text" 
+                                name="nombre" 
+                                value= usuario ? usuario.nombre : ''
+                            )
+                        
+                        div 
+                            label(for="email" class="block text-sm font-medium text-gray-700 mb-2") Correo Electrónico
+                            input#email(
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-red-500 focus:border-red-500 shadow-sm" 
+                                placeholder="Tu Email de Registro" 
+                                type="email" 
+                                name="email" 
+                                value= usuario ? usuario.email : ''
+                            )
+                        
+                        div 
+                            label(for="password" class="block text-sm font-medium text-gray-700 mb-2") Contraseña
+                            input#password(
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-red-500 focus:border-red-500 shadow-sm" 
+                                placeholder="Elige tu Contraseña" 
+                                type="password" 
+                                name="password"
+                            )
+                        
+                        div 
+                            label(for="repetir_password" class="block text-sm font-medium text-gray-700 mb-2") Repetir Contraseña
+                            input#repetir_password(
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:ring-red-500 focus:border-red-500 shadow-sm" 
+                                placeholder="Repite tu Contraseña" 
+                                type="password" 
+                                name="repetir_password"
+                            )
+                        
+                        div(class="flex items-center justify-between text-sm")
+                            a(href="/auth/login" class="font-medium text-red-600 hover:text-red-800") ¿Ya tienes cuenta? Inicia Sesión
+                            a(href="/auth/olvide-password" class="font-medium text-gray-500 hover:text-gray-700") Olvidé mi Contraseña
 
-                    input(class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-semibold py-3 mt-4 rounded-lg cursor-pointer transition duration-300" type="submit" value="Crear Cuenta")
+                        input(class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 mt-4 rounded-lg cursor-pointer transition duration-300 shadow-md transform hover:scale-[1.01]" type="submit" value="Crear Cuenta")

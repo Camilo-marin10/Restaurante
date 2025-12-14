@@ -1,40 +1,32 @@
-// views/layout/header-app.pug
-
-// Primer Nivel: Barra Superior (Común para todos)
-header(class="bg-indigo-600 p-4")
+header(class="bg-red-800 p-4 shadow-lg")
     div(class="container mx-auto flex justify-between items-center")
-        a(href="/") 
-            h1(class="text-2xl text-white font-extrabold text-center") SENA 
+        a(href="/")
+            h1(class="text-3xl text-white font-extrabold tracking-tight") SENA 
                 span(class="font-normal") Restaurante
         
-        // Navegación de Acceso y Sesión
         nav(class="my-5 text-sm md:flex md:items-center md:gap-3 font-bold text-white")
             if usuario
-                span(class="text-white") Bienvenido, #{usuario.nombre}
+                span(class="text-white text-base") Bienvenido, #{usuario.nombre}
                 
                 form(action="/auth/logout" method="POST" class="inline ml-3") 
                     input(type="hidden" name="_csrf" value= csrfToken) 
-                    input(type="submit" class="bg-indigo-800 hover:bg-indigo-400 py-2 px-4 rounded-lg font-bold cursor-pointer" value="Cerrar Sesión")
+                    input(type="submit" class="bg-red-900 hover:bg-red-700 py-2 px-4 rounded-lg font-bold cursor-pointer transition-colors" value="Cerrar Sesión")
             else
-                a(href="/auth/registro" class="hover:text-indigo-200") Crear Cuenta
-                a(href="/auth/login" class="hover:text-indigo-200 ml-3") Iniciar Sesión
+                a(href="/auth/registro" class="hover:text-red-200 transition-colors") Crear Cuenta
+                a(href="/auth/login" class="hover:text-red-200 ml-3 transition-colors") Iniciar Sesión
 
-// Segundo Nivel: Barra de Navegación Condicional (Menú Principal)
 if usuario 
-    div(class="bg-indigo-700 py-5 hidden lg:block")
+    div(class="bg-red-700 py-3 hidden lg:block shadow-inner")
         div(class="container mx-auto flex justify-between")
             nav(class="flex gap-6 items-center") 
                 
-                // 🚨 CORRECCIÓN CLAVE: Usamos .trim() para limpiar la cadena de espacios invisibles
                 if usuario.rol && usuario.rol.trim() === 'admin'
-                    // Menú para ADMINISTRADOR
-                    a(href="/admin" class="text-sm font-bold uppercase text-white hover:text-indigo-200") Panel Principal
-                    a(href="/admin/reservas" class="text-sm font-bold uppercase text-white hover:text-indigo-200") Gestión de Reservas
-                    a(href="/admin/mesas" class="text-sm font-bold uppercase text-white hover:text-indigo-200") Gestión de Mesas
-                    a(href="/admin/clientes" class="text-sm font-bold uppercase text-white hover:text-indigo-200") Gestión de Clientes
+                    a(href="/admin" class="text-sm font-bold uppercase text-white hover:text-red-200 transition-colors") Panel Principal
+                    a(href="/admin/reservas" class="text-sm font-bold uppercase text-white hover:text-red-200 transition-colors") Gestión de Reservas
+                    a(href="/admin/mesas" class="text-sm font-bold uppercase text-white hover:text-red-200 transition-colors") Gestión de Mesas
+                    a(href="/admin/clientes" class="text-sm font-bold uppercase text-white hover:text-red-200 transition-colors") Gestión de Clientes
                 
                 else 
-                    // Menú para USUARIO ESTÁNDAR (Cliente)
-                    a(href="/usuario/dashboard" class="text-sm font-bold uppercase text-white hover:text-indigo-200") Mi Panel
-                    a(href="/usuario/reserva/crear" class="text-sm font-bold uppercase text-white hover:text-indigo-200") Reservar 
-                    a(href="/usuario/mis-reservas" class="text-sm font-bold uppercase text-white hover:text-indigo-200") Mis Reservas
+                    a(href="/usuario/dashboard" class="text-sm font-bold uppercase text-white hover:text-red-200 transition-colors") Mi Panel
+                    a(href="/usuario/reserva/crear" class="text-sm font-bold uppercase text-white hover:text-red-200 transition-colors") Reservar 
+                    a(href="/usuario/mis-reservas" class="text-sm font-bold uppercase text-white hover:text-red-200 transition-colors") Mis Reservas

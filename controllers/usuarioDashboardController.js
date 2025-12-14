@@ -1,21 +1,13 @@
-// controllers/usuarioDashboardController.js
-
-import { Op } from "sequelize";
+import { Op, Sequelize, fn, col } from "sequelize";
 import { check, validationResult } from "express-validator";
-
-// 🚨 CRÍTICO: Importamos 'generarId' ya que es la función que exporta tu helper.
 import { generarId } from "../helpers/tokens.js";
-
-// 🚨 Asegúrate de que estas rutas de importación de modelos sean correctas
 import Reserva from "../models/Reserva.js";
-import Usuario from "../models/Usuarios.js"; // Asumimos que esta es la FK en tu modelo Reserva
+import Usuario from "../models/Usuarios.js";
 import Mesa from "../models/Mesa.js";
 
-// Configuración Fija de Horario de Atención
 const HORA_APERTURA = "10:00";
 const HORA_CIERRE = "23:00";
 
-// Opciones de Duración para la vista
 const duraciones = [
   { valor: 1.0, texto: "1 Hora" },
   { valor: 1.5, texto: "1.5 Horas" },
@@ -24,78 +16,159 @@ const duraciones = [
   { valor: 3.0, texto: "3 Horas" },
 ];
 
-// ----------------------------------------------------------------------
-// Función Auxiliar CRÍTICA: Busca y asigna una mesa
-// ----------------------------------------------------------------------
 const buscarMesaDisponible = async (fecha, horaInicio, duracion, personas) => {
   const duracionMinutos = duracion * 60;
-  const horaInicioNueva = new Date(`${fecha}T${horaInicio}:00`);
-  const horaFinNueva = new Date(
-    horaInicioNueva.getTime() + duracionMinutos * 60000
+  const horaInicioNuevaDate = new Date(`${fecha}T${horaInicio}:00`);
+  const horaFinNuevaDate = new Date(
+    horaInicioNuevaDate.getTime() + duracionMinutos * 60000
   );
-  const horaFinNuevaString = horaFinNueva.toTimeString().substring(0, 5);
+  const horaFinNuevaString = horaFinNuevaDate.toTimeString().substring(0, 5);
 
-  // 1. Encontrar mesas que tienen capacidad suficiente, ordenadas por la más pequeña primero
   const mesasAdecuadas = await Mesa.findAll({
     where: {
       capacidad: { [Op.gte]: personas },
-      estado: true, // Solo mesas activas
+      estado: "Activa",
     },
     order: [["capacidad", "ASC"]],
   });
 
   for (const mesa of mesasAdecuadas) {
-    // 2. Verificar solapamiento de horario para ESTA mesa
     const reservasSolapadas = await Reserva.findOne({
       where: {
         mesaId: mesa.id,
         fecha_reserva: fecha,
         estado: { [Op.in]: ["Confirmada", "Pendiente", "En Curso"] },
-        [Op.and]: [
-          {
-            hora_reserva: {
-              // Si la hora de inicio de una reserva existente es antes del fin de la nueva
-              [Op.lt]: horaFinNuevaString,
-            },
-          },
-        ],
+        [Op.and]: [{ hora_reserva: { [Op.lt]: horaFinNuevaString } }],
       },
     });
 
-    // Si no se encontró ninguna reserva solapada, esta mesa está disponible.
     if (!reservasSolapadas) {
       return mesa.id;
     }
   }
-  return null; // No se encontró ninguna mesa disponible
+  return null;
 };
 
-// ----------------------------------------------------------------------
-// Vistas
-// ----------------------------------------------------------------------
+const actualizarEstadosReserva = async (usuarioId) => {
+  const today = new Date();
+  const currentTime = today.toTimeString().substring(0, 5);
+  const todayString = today.toISOString().split("T")[0];
 
-// Función que renderiza la vista principal para el usuario logueado
-const dashboardUsuario = (req, res) => {
+  try {
+    await Reserva.update(
+      {
+        estado: "En Curso",
+      },
+      {
+        where: {
+          clienteId: usuarioId,
+          fecha_reserva: todayString,
+          estado: "Confirmada",
+          hora_reserva: {
+            [Op.lte]: currentTime,
+          },
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error al actualizar estado 'En Curso':", error);
+  }
+
+  try {
+    const reservasEnCurso = await Reserva.findAll({
+      where: {
+        clienteId: usuarioId,
+        fecha_reserva: todayString,
+        estado: "En Curso",
+      },
+    });
+
+    const updatesToCompleted = [];
+
+    for (const reserva of reservasEnCurso) {
+      const durationMinutes = reserva.duracion_estimada * 60;
+      const startTime = new Date(`${todayString}T${reserva.hora_reserva}:00`);
+      const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+
+      const endHour = String(endTime.getHours()).padStart(2, "0");
+      const endMinute = String(endTime.getMinutes()).padStart(2, "0");
+      const endTimeString = `${endHour}:${endMinute}`;
+
+      if (currentTime >= endTimeString) {
+        updatesToCompleted.push(reserva.id);
+      }
+    }
+
+    if (updatesToCompleted.length > 0) {
+      await Reserva.update(
+        {
+          estado: "Completada",
+        },
+        {
+          where: {
+            id: { [Op.in]: updatesToCompleted },
+          },
+        }
+      );
+    }
+  } catch (error) {
+    console.error("Error al actualizar estado 'Completada':", error);
+  }
+};
+
+const dashboardUsuario = async (req, res) => {
+  const usuario = res.locals.usuario;
+  const usuarioId = usuario ? usuario.id : null;
+
+  if (!usuarioId) {
+    return res.redirect("/auth/login");
+  }
+
+  await actualizarEstadosReserva(usuarioId);
+
+  const today = new Date();
+  const todayString = today.toISOString().split("T")[0];
+
+  let reservasHoyUsuario = [];
+
+  try {
+    reservasHoyUsuario = await Reserva.findAll({
+      where: {
+        clienteId: usuarioId,
+        fecha_reserva: todayString,
+        estado: {
+          [Op.notIn]: ["Completada", "Cancelada", "No-Show"],
+        },
+      },
+      include: [{ model: Mesa, as: "mesa", attributes: ["nombre"] }],
+      order: [["hora_reserva", "ASC"]],
+    });
+  } catch (error) {
+    console.error("Error al buscar reservas de hoy para el usuario:", error);
+  }
+
   res.render("usuario/dashboard", {
     titulo: "Mi Panel de Reservas",
+    usuario: usuario,
+    reservasHoyUsuario: reservasHoyUsuario,
+    csrfToken: req.csrfToken(),
   });
 };
 
-// Función para mostrar el formulario de reserva pública (GET request)
 const crearReservaPublica = (req, res) => {
   res.render("usuario/crear-reserva", {
     titulo: "Crear Nueva Reserva",
     csrfToken: req.csrfToken(),
     datos: req.body || {},
-    duraciones, // Pasamos las opciones de duración a la vista PUG
+    duraciones,
   });
 };
 
-// ----------------------------------------------------------------------
-// CRÍTICA: Procesar y Guardar Reserva
-// ----------------------------------------------------------------------
 const procesarReserva = async (req, res) => {
-  // 🚨 1. VALIDACIÓN: Aseguramos que la duración se valida
+  if (!res.locals.usuario || !res.locals.usuario.id) {
+    return res.redirect("/auth/login");
+  }
+
   await check("fecha_reserva")
     .notEmpty()
     .withMessage("La fecha es obligatoria")
@@ -123,22 +196,18 @@ const procesarReserva = async (req, res) => {
     notas,
   } = req.body;
 
-  // Si la validación falla, renderiza el formulario con errores
   if (!errores.isEmpty()) {
     return res.render("usuario/crear-reserva", {
       titulo: "Crear Nueva Reserva",
       csrfToken: req.csrfToken(),
       errores: errores.array(),
       datos: req.body,
-      duraciones, // Pasamos las duraciones si hay error para rellenar el select
+      duraciones,
     });
   }
 
-  // 🛑 2. OBTENER ID DEL USUARIO LOGUEADO
-  // Se asume que el middleware 'identificarUsuario' adjuntó el objeto usuario a res.locals
   const usuarioId = res.locals.usuario.id;
 
-  // 🛑 3. ASIGNACIÓN DE MESA
   const mesaIdAsignada = await buscarMesaDisponible(
     fecha_reserva,
     hora_reserva,
@@ -160,21 +229,19 @@ const procesarReserva = async (req, res) => {
     });
   }
 
-  // 🛑 4. GUARDAR EN BASE DE DATOS
   try {
     await Reserva.create({
-      codigo_reserva: generarId(), // Usa tu UUID
+      codigo_reserva: generarId(),
       fecha_reserva,
       hora_reserva,
       numero_personas: parseInt(numero_personas),
       duracion_estimada: parseFloat(duracion_estimada),
       notas: notas || "",
-      usuarioId: usuarioId, // Asigna el ID del usuario logueado
+      clienteId: usuarioId,
       mesaId: mesaIdAsignada,
-      estado: "Pendiente", // La solicitud del cliente es Pendiente por defecto
+      estado: "Pendiente",
     });
 
-    // 5. Éxito
     return res.render("templates/mensaje", {
       titulo: "Solicitud de Reserva Enviada",
       mensaje:
@@ -184,7 +251,6 @@ const procesarReserva = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al guardar la reserva del usuario:", error);
-    // Manejo de errores de base de datos
     return res.render("usuario/crear-reserva", {
       titulo: "Crear Nueva Reserva",
       csrfToken: req.csrfToken(),
@@ -197,20 +263,78 @@ const procesarReserva = async (req, res) => {
   }
 };
 
-// Función para mostrar las reservas existentes del cliente
+const cancelarReservaUsuario = async (req, res) => {
+  const usuarioId = res.locals.usuario ? res.locals.usuario.id : null;
+  const { id } = req.params;
+
+  if (!usuarioId) {
+    return res.redirect("/auth/login");
+  }
+
+  try {
+    const reserva = await Reserva.findByPk(id);
+
+    if (!reserva) {
+      return res.render("templates/mensaje", {
+        titulo: "Error",
+        mensaje: "Reserva no encontrada.",
+        enlace: "/usuario/mis-reservas",
+        btn: "Volver a Mis Reservas",
+      });
+    }
+
+    if (String(reserva.clienteId) !== String(usuarioId)) {
+      return res.render("templates/mensaje", {
+        titulo: "Acceso Denegado",
+        mensaje: "No tienes permiso para cancelar esta reserva.",
+        enlace: "/usuario/mis-reservas",
+        btn: "Volver a Mis Reservas",
+      });
+    }
+
+    if (
+      ["En Curso", "Completada", "Cancelada", "No-Show"].includes(
+        reserva.estado
+      )
+    ) {
+      return res.render("templates/mensaje", {
+        titulo: "Cancelación Imposible",
+        mensaje: `Esta reserva ya se encuentra en estado '${reserva.estado}' y no puede ser cancelada.`,
+        enlace: "/usuario/mis-reservas",
+        btn: "Volver a Mis Reservas",
+      });
+    }
+
+    await reserva.update({ estado: "Cancelada" });
+
+    return res.render("templates/mensaje", {
+      titulo: "Reserva Eliminada",
+      mensaje: "Su reserva se ha cancelado correctamente.",
+      enlace: "/usuario/mis-reservas",
+      btn: "Ver Mis Reservas",
+    });
+  } catch (error) {
+    console.error("Error al cancelar la reserva:", error);
+    return res.render("templates/mensaje", {
+      titulo: "Error",
+      mensaje: "Hubo un error al procesar la cancelación. Inténtalo de nuevo.",
+      enlace: "/usuario/mis-reservas",
+      btn: "Volver a Mis Reservas",
+    });
+  }
+};
+
 const misReservas = async (req, res) => {
-  // 1. Aseguramos que el usuario esté logueado
   if (!res.locals.usuario) {
     return res.redirect("/auth/login");
   }
 
   const usuarioId = res.locals.usuario.id;
-  let reservas = []; // --- Lógica de Consulta a Base de Datos (IMPLEMENTADA) ---
+  let reservas = [];
 
   try {
-    // Buscar todas las reservas asociadas a este usuario
     reservas = await Reserva.findAll({
-      where: { usuarioId: usuarioId },
+      where: { clienteId: usuarioId },
       include: [{ model: Mesa, as: "mesa" }],
       order: [
         ["fecha_reserva", "DESC"],
@@ -218,13 +342,20 @@ const misReservas = async (req, res) => {
       ],
     });
   } catch (error) {
-    console.error("Error al obtener reservas:", error); // Manejo de errores
+    console.error("Error al obtener reservas:", error);
   }
 
   res.render("usuario/mis-reservas", {
     titulo: "Mis Reservas Actuales",
-    reservas: reservas, // Pasar los datos reales
+    reservas: reservas,
+    csrfToken: req.csrfToken(),
   });
 };
 
-export { dashboardUsuario, crearReservaPublica, procesarReserva, misReservas };
+export {
+  dashboardUsuario,
+  crearReservaPublica,
+  procesarReserva,
+  misReservas,
+  cancelarReservaUsuario,
+};

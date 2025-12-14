@@ -1,10 +1,9 @@
 import { Op } from "sequelize";
 import { check, validationResult } from "express-validator";
 import Mesa from "../models/Mesa.js";
-import Cliente from "../models/Cliente.js";
+import Usuario from "../models/Usuarios.js";
 import Reserva from "../models/Reserva.js";
 
-// Configuración Fija de Horario de Atención
 const HORA_APERTURA = "10:00";
 const HORA_CIERRE = "23:00";
 
@@ -20,9 +19,9 @@ const generarCodigo = () => {
 };
 
 const obtenerDatosFormulario = async () => {
-  const [mesas, clientes] = await Promise.all([
-    Mesa.findAll({ where: { estado: true } }),
-    Cliente.findAll(),
+  const [mesas, usuarios] = await Promise.all([
+    Mesa.findAll({ where: { estado: "Activa" } }),
+    Usuario.findAll(),
   ]);
 
   const duraciones = [
@@ -33,7 +32,7 @@ const obtenerDatosFormulario = async () => {
     { valor: 3.0, texto: "3 Horas" },
   ];
 
-  return { mesas, clientes, duraciones };
+  return { mesas, clientes: usuarios, duraciones };
 };
 
 // Función de Validación de Reserva
@@ -142,7 +141,7 @@ const validarReserva = async (req, isUpdate = false) => {
     );
     const horaFinExistente = new Date(
       horaInicioExistente.getTime() + duracionExistenteMinutos * 60000
-    ); // Criterio de Solapamiento
+    );
 
     const solapamiento =
       horaInicioNuevaReserva < horaFinExistente &&
@@ -190,16 +189,16 @@ const validarReserva = async (req, isUpdate = false) => {
   return { errores: erroresPersonalizados, datos: req.body, mesa };
 };
 
-//Listar Reservas (CORREGIDA para mostrar solicitudes pendientes)
+//Listar Reservas
 const adminReservas = async (req, res) => {
   const reservas = await Reserva.findAll({
     where: {
       estado: {
-        [Op.in]: ["Pendiente", "Confirmada", "En Curso"], // 🛑 CORRECCIÓN: Filtra los estados activos, incluyendo 'Pendiente'
+        [Op.in]: ["Pendiente", "Confirmada", "En Curso"],
       },
     },
     include: [
-      { model: Cliente, as: "cliente" },
+      { model: Usuario, as: "cliente" },
       { model: Mesa, as: "mesa" },
     ],
     order: [
@@ -265,9 +264,9 @@ const guardarReserva = async (req, res) => {
       numero_personas,
       duracion_estimada,
       notas: notas || "",
-      clienteId: parseInt(clienteId),
-      mesaId: parseInt(mesaId),
-      estado: "Confirmada", // El admin al crearla directamente, la confirma
+      clienteId: clienteId,
+      mesaId: mesaId,
+      estado: "Confirmada",
     });
 
     res.redirect("/admin/reservas");
@@ -314,7 +313,7 @@ const editarReserva = async (req, res) => {
 
   const reserva = await Reserva.findByPk(id, {
     include: [
-      { model: Cliente, as: "cliente" },
+      { model: Usuario, as: "cliente" },
       { model: Mesa, as: "mesa" },
     ],
   });
@@ -348,7 +347,11 @@ const guardarEdicionReserva = async (req, res) => {
   const { mesas, clientes, duraciones } = await obtenerDatosFormulario();
 
   if (errores.length > 0) {
-    datos.cliente = reserva.cliente;
+    if (reserva.clienteId) {
+      datos.cliente = await Usuario.findByPk(reserva.clienteId);
+    } else {
+      datos.cliente = null;
+    }
 
     return res.render("admin/reservas/editar", {
       titulo: `Editar Reserva: ${reserva.codigo_reserva}`,
@@ -378,7 +381,7 @@ const guardarEdicionReserva = async (req, res) => {
       numero_personas,
       duracion_estimada,
       notas: notas || "",
-      mesaId: parseInt(mesaId),
+      mesaId: mesaId,
       estado,
     });
 

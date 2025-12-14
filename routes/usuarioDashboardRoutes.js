@@ -1,26 +1,27 @@
-// routes/usuarioDashboardRoutes.js
-
 import express from "express";
-// Asegúrate de que misReservas se importe del controlador
+import { identificarUsuario } from "../middleware/usuarioMiddleware.js";
+
 import {
   dashboardUsuario,
   crearReservaPublica,
   procesarReserva,
-  misReservas, // 👈 Esta función estaba faltando en la ruta
+  misReservas,
+  cancelarReservaUsuario,
 } from "../controllers/usuarioDashboardController.js";
 
 const router = express.Router();
 
-// Panel Principal del Cliente
-router.get("/dashboard", dashboardUsuario);
+router.get("/dashboard", identificarUsuario, dashboardUsuario);
 
-// RUTAS DE RESERVA
-// 1. Formulario GET para crear reserva
-router.get("/reserva/crear", crearReservaPublica);
-// 2. Procesar POST de la reserva
-router.post("/reserva/crear", procesarReserva);
+router.get("/reserva/crear", identificarUsuario, crearReservaPublica);
+router.post("/reserva/crear", identificarUsuario, procesarReserva);
 
-// NUEVA RUTA: Listado de Reservas del Cliente
-router.get("/mis-reservas", misReservas);
+router.get("/mis-reservas", identificarUsuario, misReservas);
+
+router.post(
+  "/reserva/cancelar/:id",
+  identificarUsuario,
+  cancelarReservaUsuario
+);
 
 export default router;

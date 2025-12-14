@@ -1,21 +1,23 @@
 extends ../layout/index
 
 block contenido
-    .py-10
-
-        h1.text-4xl.my-10.font-extrabold.text-center Bienes Raices 
-            span.font-normal SENA
-        
-        // El título principal varía según si hay error o no
-        h2.text-center.text-3xl.font-bold(class=error ? 'text-red-600' : 'text-indigo-600')=titulo
-
-        div.bg-white.py-8.px-4.shadow.rounded-lg.max-w-md.mx-auto.mt-10
-            p.text-center.text-gray-900.font-bold.mb-4=mensaje
+    div(class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center")
+        div(class="max-w-md w-full")
+            h1(class="text-4xl my-10 font-extrabold text-center text-red-800") RESTAURANT
+                span(class="font-normal text-orange-600") ADMIN
             
-            // Si pasamos un enlace y un botón, lo mostramos
-            if enlace && btn
-                a(
-                    class="w-full font-semibold py-3 rounded-lg cursor-pointer transition duration-300 block text-center"
-                    class=error ? 'bg-red-700 hover:bg-red-800 text-white' : 'bg-indigo-700 hover:bg-indigo-800 text-white'
-                    href=enlace
-                )= btn
+            
+            h2(class="text-center text-3xl font-bold" class=error ? 'text-red-600' : 'text-amber-600')=titulo
+
+            
+            div(class="bg-white py-10 px-6 shadow-2xl rounded-xl max-w-md mx-auto mt-8 border-t-4" class=error ? 'border-red-600' : 'border-amber-600')
+                
+                
+                p(class="text-center text-gray-800 font-semibold mb-6 text-lg")=mensaje
+                
+                if enlace && btn
+                    a(
+                        class="w-full font-bold py-3 rounded-lg cursor-pointer transition duration-300 block text-center uppercase text-sm shadow-md transform hover:scale-[1.01] text-white"
+                        class=error ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'
+                        href=enlace
+                    )= btn

@@ -1,24 +1,30 @@
 extends ../layout/index.pug
 
 block contenido
-    div(class="py-10 px-4 sm:px-6 lg:px-8")
-        h1(class="text-3xl font-extrabold text-gray-900 mb-6 text-green-600") ¡Reserva Solicitada!
-        
-        div(class="bg-white p-6 rounded-lg shadow-xl")
-            p(class="text-xl font-semibold text-gray-700 mb-4")= mensaje
+    div(class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 flex justify-center")
+        div(class="max-w-xl w-full bg-white p-10 rounded-2xl shadow-2xl border-t-4 border-green-600 text-center animate-fade-in")
             
-            p(class="text-md text-gray-600") 
-                | Tu reserva para 
-                span(class="font-bold")= datos.numero_personas 
-                | personas en la fecha 
-                span(class="font-bold")= datos.fecha_reserva 
-                | a las 
-                span(class="font-bold")= datos.hora_reserva 
-                | ha sido recibida.
+            h1(class="text-4xl font-extrabold text-green-700 mb-4 tracking-tight") ¡Reserva Solicitada! 🍽️
+            
+            div(class="my-6 p-4 bg-green-50 border border-green-200 rounded-lg")
+                p(class="text-xl font-bold text-green-800")= mensaje
+            
+            div(class="text-lg text-gray-700 space-y-3")
+                p 
+                    | Tu reserva para 
+                    span(class="font-extrabold text-red-700")= datos.numero_personas 
+                    | personas ha sido recibida con éxito.
 
-            p(class="mt-4 text-sm text-gray-500") 
-                | El estado inicial es "Pendiente" y recibirás una notificación al correo cuando sea validada por el restaurante. 
+                p(class="text-xl font-semibold")
+                    span(class="text-red-800") Fecha: 
+                    span(class="font-extrabold")= datos.fecha_reserva 
+                    | a las 
+                    span(class="font-extrabold")= datos.hora_reserva 
+                    | horas.
 
-            div(class="mt-6")
-                a(href="/usuario/dashboard" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500")
-                    | Volver al Panel
+                p(class="mt-6 text-sm text-gray-500 italic") 
+                    | El estado inicial es "Pendiente". Te enviaremos una notificación por correo electrónico tan pronto como sea validada y confirmada por nuestro equipo del restaurante.
+
+            div(class="mt-10")
+                a(href="/usuario/dashboard" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-bold rounded-lg shadow-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-200 transform hover:scale-105")
+                    | Volver a Mi Panel

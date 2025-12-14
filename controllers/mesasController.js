@@ -1,4 +1,3 @@
-// controllers/mesasController.js
 import Mesa from "../models/Mesa.js";
 import { check, validationResult } from "express-validator";
 

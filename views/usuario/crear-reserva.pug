@@ -1,69 +1,72 @@
 extends ../layout/index
 
 block contenido
-    div(class="py-10 px-4 sm:px-6 lg:px-8")
-        h1(class="text-3xl font-extrabold text-gray-900 mb-6")= titulo
-        p(class="text-lg text-gray-700") Por favor, selecciona los detalles de tu reserva.
+    div(class="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50")
+        div(class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-2xl border-t-4 border-red-600")
 
-        if errores
-            div(class="p-4 mb-4 bg-red-50 border-l-4 border-red-500 text-red-700" role="alert")
-                p(class="font-bold") Errores de Validación:
-                ul(class="mt-1 list-disc list-inside")
-                    each error in errores
-                        li= error.msg
+            h1(class="text-4xl font-extrabold text-red-800 mb-2 tracking-tight")= titulo
+            p(class="text-lg text-gray-700 mb-8") Por favor, selecciona los detalles de tu reserva.
 
-        form(class="mt-8 space-y-6" method="POST" action="/usuario/reserva/crear")
-            input(type="hidden" name="_csrf" value=csrfToken)
+            if errores
+                div(class="p-4 mb-8 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-md" role="alert")
+                    p(class="font-bold") Problemas con la Reserva:
+                    ul(class="mt-1 list-disc list-inside")
+                        each error in errores
+                            li= error.msg
 
-            div(class="grid grid-cols-1 gap-6 md:grid-cols-3")
-                div
-                    label(class="block text-sm font-medium text-gray-700" for="fecha_reserva") Fecha
-                    input#fecha_reserva(
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        type="date" 
-                        name="fecha_reserva" 
-                        value=datos.fecha_reserva || "" 
-                        min=new Date().toISOString().split('T')[0]
-                    )
+            form(class="mt-8 space-y-8" method="POST" action="/usuario/reserva/crear")
+                input(type="hidden" name="_csrf" value=csrfToken)
+
+                div(class="grid grid-cols-1 gap-6 md:grid-cols-3")
+                    
+                    div
+                        label(class="block text-sm font-bold text-gray-700 mb-1" for="fecha_reserva") Fecha
+                        input#fecha_reserva(
+                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3"
+                            type="date" 
+                            name="fecha_reserva" 
+                            value=datos.fecha_reserva || "" 
+                            min=new Date().toISOString().split('T')[0]
+                        )
+                    
+                    div
+                        label(class="block text-sm font-bold text-gray-700 mb-1" for="hora_reserva") Hora Deseada
+
+                        input#hora_reserva(
+                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3" 
+                            type="time" 
+                            name="hora_reserva" 
+                            value=datos.hora_reserva || ""
+                            step="900" 
+                        )
+
+                    div
+                        label(class="block text-sm font-bold text-gray-700 mb-1" for="numero_personas") Cantidad de Personas
+                        input#numero_personas(
+                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3"
+                            type="number" 
+                            name="numero_personas" 
+                            value=datos.numero_personas || "" 
+                            min="1" 
+                            max="15"
+                        )
+
+                div(class="grid grid-cols-1 gap-6 md:grid-cols-3")
+                    div
+                        label(class="block text-sm font-bold text-gray-700 mb-1" for="duracion_estimada") Duración de la Reserva
+                        select#duracion_estimada(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3" name="duracion_estimada")
+                            option(value="") -- Selecciona Duración --
+                            each duracion in duraciones
+                                option(value=duracion.valor selected=(datos.duracion_estimada === duracion.valor.toString()))= duracion.texto
+
+                    div(class="col-span-2") 
                 
                 div
-                    label(class="block text-sm font-medium text-gray-700" for="hora_reserva") Hora Deseada
-
-                    input#hora_reserva(
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
-                        type="time" 
-                        name="hora_reserva" 
-                        value=datos.hora_reserva || ""
-                        step="900" 
-                    )
+                    label(class="block text-sm font-bold text-gray-700 mb-1" for="notas") Observaciones (Ej. Alergias, Cumpleaños)
+                    textarea#notas(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3 h-24" name="notas")= datos.notas || ""
 
                 div
-                    label(class="block text-sm font-medium text-gray-700" for="numero_personas") Cantidad de Personas
-                    input#numero_personas(
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        type="number" 
-                        name="numero_personas" 
-                        value=datos.numero_personas || "" 
-                        min="1" 
-                        max="15"
-                    )
-
-            div(class="grid grid-cols-1 gap-6 md:grid-cols-3")
-                div
-                    label(class="block text-sm font-medium text-gray-700" for="duracion_estimada") Duración de la Reserva
-                    select#duracion_estimada(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" name="duracion_estimada")
-                        option(value="") -- Selecciona Duración --
-                        each duracion in duraciones
-                            option(value=duracion.valor selected=(datos.duracion_estimada === duracion.valor.toString()))= duracion.texto
-
-                div(class="col-span-2") 
-                    
-            div
-                label(class="block text-sm font-medium text-gray-700" for="notas") Observaciones (Ej. Alergias, Cumpleaños
-                textarea#notas(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" name="notas")= datos.notas || ""
-
-            div
-                button(
-                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    type="submit"
-                ) Confirmar y Buscar Disponibilidad
+                    button(
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-xl text-lg font-extrabold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-200 transform hover:scale-[1.01]"
+                        type="submit"
+                    ) Enviar solicitud de reserva

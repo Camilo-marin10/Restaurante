@@ -1,27 +1,47 @@
 extends ../layout/index
 
-block contenido   
-    .py-10 
-        h1.text-4x1.my-10.font-extrabold.text-center Bienes Raíces
-            span.font-normal SENA
-        h2.text-center.text-2x1.font-extrabold=tituloPagina
-        if errores
-            div(class="max-w-md mx-auto my-10")
-                each error in errores
-                    p.bg-red-600.text-white.uppercase.text-xs.text-center.p-2.mb-1.font-bold= error.msg
+block contenido 
+    div(class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center")
+        div(class="max-w-md w-full")
+            h1(class="text-4xl my-10 font-extrabold text-center text-red-800") RESTAURANT
+                span(class="font-normal text-orange-600") SENA
+            h2(class="text-center text-2xl font-extrabold text-gray-800")= tituloPagina
 
+            if errores
+                div(class="max-w-md mx-auto my-6")
+                    each error in errores
+                        p(class="bg-red-600 text-white uppercase text-xs text-center p-3 mb-1 font-bold rounded-lg shadow-md")= error.msg
 
-        .mt-8.mx-auto.max-w-md 
-            .bg-white.py-8.px-4.shadow
-                form.space-y-5(action='/auth/login', method='post')
-                    input(type="hidden" name="_csrf" value=csrfToken)
-                    div 
-                        label.block.text-sm.uppercase.text-gray-500.mb-3.font-bold(for='email') Email de Registro
-                        input#email.w-full.px-3.py-2.border.border-gray-300.rounded-mb.placeholder-gray-400(placeholder='Escribe tu email' type='email' name='email')
-                    div 
-                        label.block.text-sm.uppercase.text-gray-500.mb-3.font-bold(for='password') Contraseña
-                        input#password.w-full.px-3.py-2.border.border-gray-300.rounded-mb.placeholder-gray-400(placeholder='Escribe tu contraseña' type='password' name='password')
-                    div.flex.items-center.justify-between
-                        a.text-gray-500.text-xs(href="/auth/registro") ¿No tienes cuenta? Crea una 
-                        a.text-gray-500.text-xs(href="/auth/olvide-password") Olvidé mi contraseña
-                    input(class='w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 cursor-pointer' type='submit' value='Iniciar Sesión')
+            div(class="mt-8 mx-auto max-w-md") 
+                div(class="bg-white py-8 px-6 shadow-2xl rounded-xl border-t-4 border-red-600")
+                    form(action='/auth/login', method='post' class="space-y-6")
+                        input(type="hidden" name="_csrf" value=csrfToken)
+                        
+                        div 
+                            label(for='email' class="block text-sm uppercase text-gray-600 mb-3 font-bold") Correo de Administrador
+                            input#email(
+                                name='email'
+                                type='email' 
+                                placeholder='Escribe tu email' 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 shadow-sm"
+                                value= datos ? datos.email : ''
+                            )
+                            
+                        div 
+                            label(for='password' class="block text-sm uppercase text-gray-600 mb-3 font-bold") Contraseña
+                            input#password(
+                                name='password'
+                                type='password' 
+                                placeholder='Escribe tu contraseña' 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 shadow-sm"
+                            )
+                            
+                        div(class="flex items-center justify-between text-sm")
+                            a(href="/auth/registro" class="text-red-600 hover:text-red-800 font-medium") ¿No tienes cuenta? Crea una 
+                            a(href="/auth/olvide-password" class="text-gray-500 hover:text-gray-700 font-medium") Olvidé mi contraseña
+                            
+                        input(
+                            type='submit' 
+                            value='Iniciar Sesión'
+                            class='w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 cursor-pointer rounded-lg uppercase transition duration-300 shadow-md transform hover:scale-[1.01]'
+                        )
