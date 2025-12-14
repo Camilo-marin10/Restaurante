@@ -1,3 +1,5 @@
+// routes/usuariosRoutes.js (Completo y Corregido)
+
 import express from "express";
 import {
   login,
@@ -9,6 +11,7 @@ import {
   comprobarToken,
   nuevoPassword,
   confirmar,
+  cerrarSesion, // 👈 Se asegura de que se importa correctamente
 } from "../controllers/usuariosController.js";
 
 const router = express.Router();
@@ -29,5 +32,8 @@ router.get("/olvide-password", olvidePassword);
 router.post("/olvide-password", solicitarResetPassword);
 router.get("/olvide-password/:token", comprobarToken);
 router.post("/olvide-password/:token", nuevoPassword);
+
+// 🛑 CIERRE DE SESIÓN (SOLUCIÓN)
+router.post("/logout", cerrarSesion); // 👈 Esta línea estaba faltando
 
 export default router;

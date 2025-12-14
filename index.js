@@ -9,6 +9,8 @@ import dashboardRoutes from "./routes/admin/dashboardRoutes.js";
 import mesasRoutes from "./routes/admin/mesasRoutes.js";
 import clientesRoutes from "./routes/admin/clientesRoutes.js";
 import reservasRoutes from "./routes/admin/reservasRoutes.js";
+// 🚨 NUEVA IMPORTACIÓN PARA RUTAS DE USUARIO ESTÁNDAR 🚨
+import usuarioDashboardRoutes from "./routes/usuarioDashboardRoutes.js";
 import { identificarUsuario } from "./middleware/usuarioMiddleware.js";
 
 import db from "./config/db.js";
@@ -16,7 +18,7 @@ import db from "./config/db.js";
 const app = express();
 
 try {
-  await db.authenticate();
+  await db.authenticate(); // 🚨 NOTA IMPORTANTE: Remover { alter: true } después de la primera ejecución exitosa // para no ralentizar el servidor y evitar posibles problemas en producción.
   await db.sync({ alter: true });
   console.log("Conexion correcta a la base de datos");
 } catch (error) {
@@ -43,11 +45,14 @@ app.set("views", "./views");
 
 app.use(express.static("public"));
 
+// routing
 app.use("/auth", usuarioRoutes);
 app.use("/admin", dashboardRoutes);
 app.use("/admin/mesas", mesasRoutes);
 app.use("/admin/clientes", clientesRoutes);
 app.use("/admin/reservas", reservasRoutes);
+// 🚨 RUTA NUEVA PARA EL PANEL DE USUARIO ESTÁNDAR 🚨
+app.use("/usuario", usuarioDashboardRoutes);
 app.use("/", dashboardRoutes);
 
 const port = process.env.PORT || 3000;

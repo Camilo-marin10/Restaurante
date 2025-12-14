@@ -1,0 +1,31 @@
+extends ../layout/index
+
+block contenido
+    div(class="py-10 px-4 sm:px-6 lg:px-8")
+        h1(class="text-3xl font-extrabold text-gray-900 mb-6") RESTAURANTE SENA
+        
+        if usuario
+            p(class="text-lg text-gray-700")
+                | ¡Bienvenido de nuevo, 
+                span(class="font-bold")= usuario.nombre
+                |! 
+            p(class="text-md text-gray-500") Revisa tus reservas o haz una nueva.
+
+            div(class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3")
+                a(href="/usuario/reserva/crear")
+                    div(class="bg-white p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 cursor-pointer")
+                        h2(class="text-xl font-semibold text-indigo-600") Nueva Reserva
+                        p(class="mt-2 text-gray-500") Reserva una mesa para la fecha y hora que desees.
+
+                a(href="/usuario/mis-reservas")
+                    div(class="bg-white p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 cursor-pointer")
+                        h2(class="text-xl font-semibold text-green-600") Mis Reservas
+                        p(class="mt-2 text-gray-500") Consulta el estado, modifica o cancela tus reservas existentes.
+
+                a(href="#")
+                    div(class="bg-white p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 cursor-pointer")
+                        h2(class="text-xl font-semibold text-yellow-600") Historial
+                        p(class="mt-2 text-gray-500") Revisa tus visitas pasadas.
+
+        else
+            p(class="text-red-500") Debes iniciar sesión para ver este panel.

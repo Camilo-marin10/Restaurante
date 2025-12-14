@@ -1,0 +1,24 @@
+extends ../layout/index.pug
+
+block contenido
+    div(class="py-10 px-4 sm:px-6 lg:px-8")
+        h1(class="text-3xl font-extrabold text-gray-900 mb-6 text-green-600") ¡Reserva Solicitada!
+        
+        div(class="bg-white p-6 rounded-lg shadow-xl")
+            p(class="text-xl font-semibold text-gray-700 mb-4")= mensaje
+            
+            p(class="text-md text-gray-600") 
+                | Tu reserva para 
+                span(class="font-bold")= datos.numero_personas 
+                | personas en la fecha 
+                span(class="font-bold")= datos.fecha_reserva 
+                | a las 
+                span(class="font-bold")= datos.hora_reserva 
+                | ha sido recibida.
+
+            p(class="mt-4 text-sm text-gray-500") 
+                | El estado inicial es "Pendiente" y recibirás una notificación al correo cuando sea validada por el restaurante. 
+
+            div(class="mt-6")
+                a(href="/usuario/dashboard" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500")
+                    | Volver al Panel

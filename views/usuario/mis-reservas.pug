@@ -1,0 +1,42 @@
+extends ../layout/index.pug
+
+block contenido
+    div(class="py-10 px-4 sm:px-6 lg:px-8")
+        h1(class="text-3xl font-extrabold text-gray-900 mb-6") Mis Reservas
+
+        if reservas.length
+            div(class="bg-white shadow-md rounded-lg overflow-hidden")
+                table(class="min-w-full divide-y divide-gray-200")
+                    thead(class="bg-gray-50")
+                        tr
+                            th(class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider") Código
+                            th(class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider") Fecha
+                            th(class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider") Hora
+                            th(class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider") Personas
+                            th(class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider") Estado
+                            th(class="px-6 py-3")
+                    tbody(class="bg-white divide-y divide-gray-200")
+                        each reserva in reservas
+                            tr
+                                td(class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900")= reserva.codigo_reserva
+                                td(class="px-6 py-4 whitespace-nowrap text-sm text-gray-500")= reserva.fecha_reserva
+                                td(class="px-6 py-4 whitespace-nowrap text-sm text-gray-500")= reserva.hora_reserva
+                                td(class="px-6 py-4 whitespace-nowrap text-sm text-gray-500")= reserva.numero_personas
+                                td(class="px-6 py-4 whitespace-nowrap")
+                                    span(class=`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        ${reserva.estado === 'Confirmada' ? 'bg-green-100 text-green-800' : 
+                                        reserva.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' : 
+                                        'bg-red-100 text-red-800'}`)
+                                        = reserva.estado
+                                td(class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium")
+                                    if reserva.estado === 'Pendiente' || reserva.estado === 'Confirmada'
+                                        a(href=`/usuario/reserva/cancelar/${reserva.id}` class="text-indigo-600 hover:text-indigo-900") Cancelar
+                                    else
+                                        span(class="text-gray-400") No editable
+        else
+            div(class="bg-yellow-50 border-l-4 border-yellow-400 p-4")
+                div(class="flex items-center")
+                    div(class="ml-3 text-sm text-yellow-800")
+                        p No tienes reservas activas. ¿Quieres 
+                            a(href="/usuario/reserva/crear" class="font-medium underline hover:text-yellow-900") hacer una ahora
+                            |?

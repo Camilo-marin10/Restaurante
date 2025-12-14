@@ -4,7 +4,7 @@ import Mesa from "../models/Mesa.js";
 import Cliente from "../models/Cliente.js";
 import Reserva from "../models/Reserva.js";
 
-//Configuración Fija de Horario de Atención
+// Configuración Fija de Horario de Atención
 const HORA_APERTURA = "10:00";
 const HORA_CIERRE = "23:00";
 
@@ -36,7 +36,7 @@ const obtenerDatosFormulario = async () => {
   return { mesas, clientes, duraciones };
 };
 
-//Función de Validación de Reserva
+// Función de Validación de Reserva
 const validarReserva = async (req, isUpdate = false) => {
   await check("clienteId")
     .notEmpty()
@@ -190,9 +190,14 @@ const validarReserva = async (req, isUpdate = false) => {
   return { errores: erroresPersonalizados, datos: req.body, mesa };
 };
 
-//Listar Reservas
+//Listar Reservas (CORREGIDA para mostrar solicitudes pendientes)
 const adminReservas = async (req, res) => {
   const reservas = await Reserva.findAll({
+    where: {
+      estado: {
+        [Op.in]: ["Pendiente", "Confirmada", "En Curso"], // 🛑 CORRECCIÓN: Filtra los estados activos, incluyendo 'Pendiente'
+      },
+    },
     include: [
       { model: Cliente, as: "cliente" },
       { model: Mesa, as: "mesa" },
@@ -262,7 +267,7 @@ const guardarReserva = async (req, res) => {
       notas: notas || "",
       clienteId: parseInt(clienteId),
       mesaId: parseInt(mesaId),
-      estado: "Confirmada",
+      estado: "Confirmada", // El admin al crearla directamente, la confirma
     });
 
     res.redirect("/admin/reservas");
