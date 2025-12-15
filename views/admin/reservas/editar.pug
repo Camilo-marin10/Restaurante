@@ -30,7 +30,9 @@ block contenido
 
                     div
                         label(for="hora_reserva" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Hora
-                        input(id="hora_reserva" name="hora_reserva" type="time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.hora_reserva)
+                        // Limpiamos el valor de la hora para asegurar HH:MM
+                        - const horaLimpia = datos.hora_reserva ? datos.hora_reserva.substring(0, 5) : ''
+                        input(id="hora_reserva" name="hora_reserva" type="time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= horaLimpia)
                 
                 div(class="grid grid-cols-1 md:grid-cols-2 gap-6")
                     div

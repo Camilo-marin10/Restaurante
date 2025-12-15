@@ -16,7 +16,62 @@ const duraciones = [
   { valor: 3.0, texto: "3 Horas" },
 ];
 
-const buscarMesaDisponible = async (fecha, horaInicio, duracion, personas) => {
+const obtenerValoresInicialesReserva = () => {
+  const today = new Date();
+  const todayString = today.toISOString().split("T")[0];
+
+  return {
+    fecha_reserva: todayString,
+    hora_reserva: HORA_APERTURA,
+    numero_personas: 2,
+    duracion_estimada: 1.0,
+  };
+};
+
+const buscarMesaDisponible = async (
+  fecha,
+  horaInicio,
+  duracion,
+  personas,
+  mesaId
+) => {
+  const duracionMinutos = duracion * 60;
+  const horaInicioNuevaDate = new Date(`${fecha}T${horaInicio}:00`);
+  const horaFinNuevaDate = new Date(
+    horaInicioNuevaDate.getTime() + duracionMinutos * 60000
+  );
+  const horaFinNuevaString = horaFinNuevaDate.toTimeString().substring(0, 5);
+
+  const mesa = await Mesa.findOne({
+    where: {
+      id: mesaId,
+      capacidad: { [Op.gte]: personas },
+      estado: "Activa",
+    },
+  });
+
+  if (!mesa) {
+    return null;
+  }
+
+  const reservasSolapadas = await Reserva.findOne({
+    where: {
+      mesaId: mesa.id,
+      fecha_reserva: fecha,
+      estado: { [Op.in]: ["Confirmada", "Pendiente", "En Curso"] },
+      [Op.and]: [{ hora_reserva: { [Op.lt]: horaFinNuevaString } }],
+    },
+  });
+
+  return reservasSolapadas ? null : mesa.id;
+};
+
+const obtenerMesasDisponibles = async (
+  fecha,
+  horaInicio,
+  duracion,
+  personas
+) => {
   const duracionMinutos = duracion * 60;
   const horaInicioNuevaDate = new Date(`${fecha}T${horaInicio}:00`);
   const horaFinNuevaDate = new Date(
@@ -30,7 +85,10 @@ const buscarMesaDisponible = async (fecha, horaInicio, duracion, personas) => {
       estado: "Activa",
     },
     order: [["capacidad", "ASC"]],
+    attributes: ["id", "nombre", "zona", "capacidad"],
   });
+
+  const mesasDisponibles = [];
 
   for (const mesa of mesasAdecuadas) {
     const reservasSolapadas = await Reserva.findOne({
@@ -43,10 +101,10 @@ const buscarMesaDisponible = async (fecha, horaInicio, duracion, personas) => {
     });
 
     if (!reservasSolapadas) {
-      return mesa.id;
+      mesasDisponibles.push(mesa);
     }
   }
-  return null;
+  return mesasDisponibles;
 };
 
 const actualizarEstadosReserva = async (usuarioId) => {
@@ -149,6 +207,7 @@ const dashboardUsuario = async (req, res) => {
       where: {
         estado: "Activa",
       },
+      attributes: ["nombre", "capacidad", "zona"],
       order: [["capacidad", "ASC"]],
     });
   } catch (error) {
@@ -164,12 +223,34 @@ const dashboardUsuario = async (req, res) => {
   });
 };
 
-const crearReservaPublica = (req, res) => {
+const crearReservaPublica = async (req, res) => {
+  let mesasDisponibles = [];
+  let datosFormulario = req.body || {};
+
+  if (!datosFormulario.fecha_reserva) {
+    datosFormulario = obtenerValoresInicialesReserva();
+  }
+
+  try {
+    mesasDisponibles = await obtenerMesasDisponibles(
+      datosFormulario.fecha_reserva,
+      datosFormulario.hora_reserva,
+      parseFloat(datosFormulario.duracion_estimada),
+      parseInt(datosFormulario.numero_personas)
+    );
+  } catch (error) {
+    console.error(
+      "Error al obtener mesas disponibles en crearReservaPublica:",
+      error
+    );
+  }
+
   res.render("usuario/crear-reserva", {
     titulo: "Crear Nueva Reserva",
     csrfToken: req.csrfToken(),
-    datos: req.body || {},
+    datos: datosFormulario,
     duraciones,
+    mesasDisponibles,
   });
 };
 
@@ -180,38 +261,85 @@ const procesarReserva = async (req, res) => {
 
   await check("fecha_reserva")
     .notEmpty()
-    .withMessage("La fecha es obligatoria")
+    .withMessage("La fecha de la reserva es obligatoria.")
     .isISO8601()
+    .withMessage("El formato de la fecha no es válido (Debe ser YYYY-MM-DD).")
     .run(req);
   await check("hora_reserva")
     .notEmpty()
-    .withMessage("La hora es obligatoria")
+    .withMessage("La hora de la reserva es obligatoria.")
     .run(req);
   await check("numero_personas")
     .isInt({ min: 1 })
-    .withMessage("Número de personas es obligatorio")
+    .withMessage(
+      "El número de personas es obligatorio y debe ser un número entero."
+    )
     .run(req);
   await check("duracion_estimada")
     .isFloat({ min: 0.5 })
-    .withMessage("La duración es obligatoria")
+    .withMessage("La duración de la reserva es obligatoria.")
+    .run(req);
+  await check("mesaId")
+    .notEmpty()
+    .withMessage(
+      "Debes seleccionar una mesa de la lista de opciones disponibles."
+    )
+    .isUUID()
+    .withMessage("El identificador de la mesa seleccionada no es válido.")
     .run(req);
 
-  const errores = validationResult(req);
-  const {
+  let errores = validationResult(req).array();
+  let {
     fecha_reserva,
     hora_reserva,
     numero_personas,
     duracion_estimada,
     notas,
+    mesaId,
   } = req.body;
 
-  if (!errores.isEmpty()) {
+  errores = errores.map((error) => {
+    if (error.msg === "Invalid value") {
+      return {
+        ...error,
+        msg: `Valor no válido detectado en el campo ${error.path}. Por favor, revise todos los campos.`,
+      };
+    }
+    return error;
+  });
+
+  if (errores.length > 0) {
+    let mesasDisponibles = [];
+    try {
+      mesasDisponibles = await obtenerMesasDisponibles(
+        fecha_reserva,
+        hora_reserva,
+        parseFloat(duracion_estimada),
+        parseInt(numero_personas)
+      );
+    } catch (error) {
+      console.error(
+        "Error al obtener mesas disponibles en error de procesarReserva:",
+        error
+      );
+    }
+
+    const datos = {
+      fecha_reserva,
+      hora_reserva,
+      numero_personas,
+      duracion_estimada,
+      notas,
+      mesaId: mesaId,
+    };
+
     return res.render("usuario/crear-reserva", {
       titulo: "Crear Nueva Reserva",
       csrfToken: req.csrfToken(),
-      errores: errores.array(),
-      datos: req.body,
+      errores: errores,
+      datos: datos,
       duraciones,
+      mesasDisponibles,
     });
   }
 
@@ -221,20 +349,37 @@ const procesarReserva = async (req, res) => {
     fecha_reserva,
     hora_reserva,
     parseFloat(duracion_estimada),
-    parseInt(numero_personas)
+    parseInt(numero_personas),
+    mesaId
   );
 
   if (!mesaIdAsignada) {
+    let mesasDisponibles = [];
+    try {
+      mesasDisponibles = await obtenerMesasDisponibles(
+        fecha_reserva,
+        hora_reserva,
+        parseFloat(duracion_estimada),
+        parseInt(numero_personas)
+      );
+    } catch (error) {
+      console.error(
+        "Error al obtener mesas disponibles en no mesa asignada:",
+        error
+      );
+    }
+
     return res.render("usuario/crear-reserva", {
       titulo: "Crear Nueva Reserva",
       csrfToken: req.csrfToken(),
       errores: [
         {
-          msg: "Lo sentimos, no hay mesas disponibles para ese horario y número de personas. Intenta con un horario o número de personas diferente.",
+          msg: "La mesa que seleccionaste ya no está disponible (fue reservada por otro cliente o no cumple los requisitos). Por favor, elige otra opción de la lista.",
         },
       ],
       datos: req.body,
       duraciones,
+      mesasDisponibles,
     });
   }
 
@@ -260,6 +405,22 @@ const procesarReserva = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al guardar la reserva del usuario:", error);
+
+    let mesasDisponibles = [];
+    try {
+      mesasDisponibles = await obtenerMesasDisponibles(
+        fecha_reserva,
+        hora_reserva,
+        parseFloat(duracion_estimada),
+        parseInt(numero_personas)
+      );
+    } catch (error) {
+      console.error(
+        "Error al obtener mesas disponibles en error al guardar:",
+        error
+      );
+    }
+
     return res.render("usuario/crear-reserva", {
       titulo: "Crear Nueva Reserva",
       csrfToken: req.csrfToken(),
@@ -268,6 +429,7 @@ const procesarReserva = async (req, res) => {
       ],
       datos: req.body,
       duraciones,
+      mesasDisponibles,
     });
   }
 };

@@ -3,9 +3,7 @@ import { check, validationResult } from "express-validator";
 import Mesa from "../models/Mesa.js";
 import Usuario from "../models/Usuarios.js";
 import Reserva from "../models/Reserva.js";
-
-const HORA_APERTURA = "10:00";
-const HORA_CIERRE = "23:00";
+import HorarioAtencion from "../models/HorarioAtencion.js";
 
 const generarCodigo = () => {
   const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -40,7 +38,6 @@ const obtenerDatosFormulario = async () => {
   return { mesas, clientes: usuarios, duraciones };
 };
 
-// Función de Validación de Reserva
 const validarReserva = async (req, isUpdate = false) => {
   await check("clienteId")
     .notEmpty()
@@ -54,11 +51,13 @@ const validarReserva = async (req, isUpdate = false) => {
     .notEmpty()
     .withMessage("La fecha es obligatoria")
     .isISO8601()
-    .withMessage("Formato de fecha no válido")
+    .withMessage("Formato de fecha no válido (AAAA-MM-DD)")
     .run(req);
   await check("hora_reserva")
     .notEmpty()
     .withMessage("La hora es obligatoria")
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .withMessage("Formato de hora no válido (HH:MM)")
     .run(req);
   await check("numero_personas")
     .isInt({ min: 1 })
@@ -80,22 +79,81 @@ const validarReserva = async (req, isUpdate = false) => {
     clienteId,
   } = req.body;
 
+  let fechaEstandarizada = fecha_reserva;
+
+  if (fecha_reserva && fecha_reserva.includes("/")) {
+    const partes = fecha_reserva.split("/");
+    if (partes.length === 3) {
+      fechaEstandarizada = `${partes[2]}-${partes[1]}-${partes[0]}`;
+    }
+  }
+
+  let apertura = null;
+  let cierre = null;
+
+  try {
+    const fecha = new Date(fechaEstandarizada + "T00:00:00");
+    const diaSemana = fecha.getDay();
+
+    if (isNaN(fecha.getTime())) {
+      erroresPersonalizados.push({
+        msg: "La fecha proporcionada no es válida. Use el formato AAAA-MM-DD.",
+      });
+    } else {
+      const horarioDia = await HorarioAtencion.findOne({
+        where: { dia_semana: diaSemana },
+        raw: true,
+      });
+
+      if (
+        !horarioDia ||
+        horarioDia.activo === 0 ||
+        !horarioDia.hora_apertura ||
+        !horarioDia.hora_cierre
+      ) {
+        erroresPersonalizados.push({
+          msg: "El restaurante está cerrado o no tiene horarios definidos para la fecha seleccionada.",
+        });
+      } else {
+        apertura = horarioDia.hora_apertura.substring(0, 5);
+        cierre = horarioDia.hora_cierre.substring(0, 5);
+      }
+    }
+  } catch (error) {
+    console.error("Error al obtener horario dinámico:", error);
+    erroresPersonalizados.push({
+      msg: "Error al verificar los horarios de atención.",
+    });
+  }
+
+  if (!resultado.isEmpty() || erroresPersonalizados.length > 0) {
+    erroresPersonalizados = [...resultado.array(), ...erroresPersonalizados];
+    return { errores: erroresPersonalizados, datos: req.body };
+  }
+
   const fechaActual = new Date().toISOString().split("T")[0];
   const horaActual = new Date().toTimeString().split(" ")[0].substring(0, 5);
 
-  if (new Date(fecha_reserva) < new Date(fechaActual)) {
+  if (
+    new Date(fechaEstandarizada + "T00:00:00") <
+    new Date(fechaActual + "T00:00:00")
+  ) {
     erroresPersonalizados.push({
-      msg: "La fecha de la reserva no puede ser en el pasado.",
+      msg: "La fecha de la reserva no puede ser anterior al día de hoy.",
     });
-  } else if (fecha_reserva === fechaActual && hora_reserva < horaActual) {
+  } else if (
+    !isUpdate &&
+    fechaEstandarizada === fechaActual &&
+    hora_reserva < horaActual
+  ) {
     erroresPersonalizados.push({
-      msg: "La hora de la reserva no puede ser en el pasado.",
+      msg: "La hora de la reserva para el día de hoy no puede ser en el pasado.",
     });
   }
 
   const duracionMinutos = duracion_estimada * 60;
   const horaInicioNuevaReserva = new Date(
-    `${fecha_reserva}T${hora_reserva}:00`
+    `${fechaEstandarizada}T${hora_reserva}:00`
   );
   const horaFinNuevaReserva = new Date(
     horaInicioNuevaReserva.getTime() + duracionMinutos * 60000
@@ -105,19 +163,18 @@ const validarReserva = async (req, isUpdate = false) => {
     .split(" ")[0]
     .substring(0, 5);
 
-  if (hora_reserva < HORA_APERTURA) {
+  if (hora_reserva < apertura) {
     erroresPersonalizados.push({
-      msg: `La reserva debe ser después de la hora de apertura (${HORA_APERTURA}).`,
+      msg: `La reserva debe ser a partir de la hora de apertura (${apertura}).`,
     });
   }
-  if (horaFinNuevaReservaString > HORA_CIERRE) {
+  if (horaFinNuevaReservaString > cierre) {
     erroresPersonalizados.push({
-      msg: `La reserva terminaría a las ${horaFinNuevaReservaString}. El restaurante cierra a las ${HORA_CIERRE}.`,
+      msg: `La reserva terminaría a las ${horaFinNuevaReservaString}. El restaurante cierra a las ${cierre}.`,
     });
   }
 
   if (!resultado.isEmpty() || erroresPersonalizados.length > 0) {
-    erroresPersonalizados = [...resultado.array(), ...erroresPersonalizados];
     return { errores: erroresPersonalizados, datos: req.body };
   }
 
@@ -133,7 +190,7 @@ const validarReserva = async (req, isUpdate = false) => {
   const reservasExistentes = await Reserva.findAll({
     where: {
       mesaId,
-      fecha_reserva,
+      fecha_reserva: fechaEstandarizada,
       ...(isUpdate && req.params.id ? { id: { [Op.ne]: req.params.id } } : {}),
       estado: { [Op.in]: ["Confirmada", "Pendiente", "En Curso"] },
     },
@@ -175,7 +232,7 @@ const validarReserva = async (req, isUpdate = false) => {
   const reservaDuplicada = await Reserva.findOne({
     where: {
       clienteId,
-      fecha_reserva,
+      fecha_reserva: fechaEstandarizada,
       hora_reserva,
       ...(isUpdate && req.params.id ? { id: { [Op.ne]: req.params.id } } : {}),
     },
@@ -191,10 +248,11 @@ const validarReserva = async (req, isUpdate = false) => {
     return { errores: erroresPersonalizados, datos: req.body };
   }
 
+  req.body.fecha_reserva = fechaEstandarizada;
+
   return { errores: erroresPersonalizados, datos: req.body, mesa };
 };
 
-//Listar Reservas
 const adminReservas = async (req, res) => {
   const reservas = await Reserva.findAll({
     where: {
@@ -219,7 +277,6 @@ const adminReservas = async (req, res) => {
   });
 };
 
-//Crear Reserva
 const crearReserva = async (req, res) => {
   const { mesas, clientes, duraciones } = await obtenerDatosFormulario();
 
@@ -233,7 +290,6 @@ const crearReserva = async (req, res) => {
   });
 };
 
-//Guardar Reserva
 const guardarReserva = async (req, res) => {
   const { errores, datos } = await validarReserva(req, false);
   const { mesas, clientes, duraciones } = await obtenerDatosFormulario();
@@ -312,7 +368,6 @@ const guardarReserva = async (req, res) => {
   }
 };
 
-// Editar Reserva
 const editarReserva = async (req, res) => {
   const { id } = req.params;
 
@@ -339,7 +394,6 @@ const editarReserva = async (req, res) => {
   });
 };
 
-//Guardar Edición
 const guardarEdicionReserva = async (req, res) => {
   const { id } = req.params;
 
@@ -409,7 +463,6 @@ const guardarEdicionReserva = async (req, res) => {
   }
 };
 
-//Cambiar Estado Rápido
 const cambiarEstadoReserva = async (req, res) => {
   const { id } = req.params;
   const { nuevoEstado } = req.body;
@@ -429,7 +482,6 @@ const cambiarEstadoReserva = async (req, res) => {
   }
 };
 
-//Eliminar Reserva
 const eliminarReserva = async (req, res) => {
   const { id } = req.params;
 

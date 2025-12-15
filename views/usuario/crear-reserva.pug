@@ -5,7 +5,7 @@ block contenido
         div(class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-2xl border-t-4 border-red-600")
 
             h1(class="text-4xl font-extrabold text-red-800 mb-2 tracking-tight")= titulo
-            p(class="text-lg text-gray-700 mb-8") Por favor, selecciona los detalles de tu reserva.
+            p(class="text-lg text-gray-700 mb-8") Por favor, selecciona los detalles de tu reserva y la mesa deseada.
 
             if errores
                 div(class="p-4 mb-8 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-md" role="alert")
@@ -36,7 +36,7 @@ block contenido
                             class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3" 
                             type="time" 
                             name="hora_reserva" 
-                            value=datos.hora_reserva || ""
+                            value=datos.hora_reserva || "10:00"
                             step="900" 
                         )
 
@@ -57,10 +57,18 @@ block contenido
                         select#duracion_estimada(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3" name="duracion_estimada")
                             option(value="") -- Selecciona Duración --
                             each duracion in duraciones
-                                option(value=duracion.valor selected=(datos.duracion_estimada === duracion.valor.toString()))= duracion.texto
+                                option(value=duracion.valor selected=(datos.duracion_estimada == duracion.valor))= duracion.texto
 
-                    div(class="col-span-2") 
-                
+                    div(class="col-span-2")
+                        label(class="block text-sm font-bold text-gray-700 mb-1" for="mesaId") Selecciona la Mesa
+                        select#mesaId(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3" name="mesaId")
+                            option(value="") -- Selecciona una mesa disponible --
+                            if mesasDisponibles && mesasDisponibles.length
+                                each mesa in mesasDisponibles
+                                    option(value=mesa.id selected=(datos.mesaId === mesa.id))= mesa.nombre + ' (' + mesa.zona + ', Capacidad: ' + mesa.capacidad + ')'
+                            else if datos.fecha_reserva && datos.hora_reserva && datos.numero_personas && datos.duracion_estimada
+                                option(value="" disabled) No hay mesas disponibles para los criterios seleccionados.
+
                 div
                     label(class="block text-sm font-bold text-gray-700 mb-1" for="notas") Observaciones (Ej. Alergias, Cumpleaños)
                     textarea#notas(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 transition duration-150 p-3 h-24" name="notas")= datos.notas || ""
@@ -69,4 +77,4 @@ block contenido
                     button(
                         class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-xl text-lg font-extrabold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-200 transform hover:scale-[1.01]"
                         type="submit"
-                    ) Enviar solicitud de reserva
+                    ) Confirmar Reserva
