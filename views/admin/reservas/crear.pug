@@ -14,7 +14,6 @@ block contenido
             form(method="POST" class="space-y-6")
                 input(type="hidden" name="_csrf" value= csrfToken)
 
-                
                 div
                     label(for="clienteId" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Cliente
                     select(id="clienteId" name="clienteId" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm")
@@ -24,15 +23,16 @@ block contenido
                         if clientes.length === 0
                             option(value="" disabled) No hay clientes registrados. (Cree uno en Gestión de Clientes)
 
-                
                 div(class="grid grid-cols-1 md:grid-cols-2 gap-6")
                     div
                         label(for="fecha_reserva" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Fecha
-                        input(id="fecha_reserva" name="fecha_reserva" type="date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.fecha_reserva)
+                        - let fechaValue = datos.fecha_reserva ? datos.fecha_reserva.substring(0, 10) : '';
+                        input(id="fecha_reserva" name="fecha_reserva" type="date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= fechaValue)
 
                     div
                         label(for="hora_reserva" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Hora
-                        input(id="hora_reserva" name="hora_reserva" type="time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.hora_reserva)
+                        - let horaValue = datos.hora_reserva ? datos.hora_reserva.substring(0, 5) : '';
+                        input(id="hora_reserva" name="hora_reserva" type="time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= horaValue)
                 
                 
                 div(class="grid grid-cols-1 md:grid-cols-2 gap-6")

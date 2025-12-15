@@ -4,9 +4,7 @@ import { generarId } from "../helpers/tokens.js";
 import Reserva from "../models/Reserva.js";
 import Usuario from "../models/Usuarios.js";
 import Mesa from "../models/Mesa.js";
-
-const HORA_APERTURA = "10:00";
-const HORA_CIERRE = "23:00";
+import HorarioAtencion from "../models/HorarioAtencion.js";
 
 const duraciones = [
   { valor: 1.0, texto: "1 Hora" },
@@ -19,10 +17,11 @@ const duraciones = [
 const obtenerValoresInicialesReserva = () => {
   const today = new Date();
   const todayString = today.toISOString().split("T")[0];
+  const horaInicial = "10:00";
 
   return {
     fecha_reserva: todayString,
-    hora_reserva: HORA_APERTURA,
+    hora_reserva: horaInicial,
     numero_personas: 2,
     duracion_estimada: 1.0,
   };
@@ -298,30 +297,30 @@ const procesarReserva = async (req, res) => {
     mesaId,
   } = req.body;
 
-  errores = errores.map((error) => {
-    if (error.msg === "Invalid value") {
-      return {
-        ...error,
-        msg: `Valor no válido detectado en el campo ${error.path}. Por favor, revise todos los campos.`,
-      };
-    }
-    return error;
-  });
+  const duracionFloat = parseFloat(duracion_estimada);
+  const personasInt = parseInt(numero_personas);
 
-  if (errores.length > 0) {
+  const recargarVistaConErrores = async (erroresAdicionales = []) => {
+    errores = [...errores, ...erroresAdicionales].map((error) => {
+      if (error.msg === "Invalid value") {
+        return {
+          ...error,
+          msg: `Valor no válido detectado en el campo ${error.path}. Por favor, revise todos los campos.`,
+        };
+      }
+      return error;
+    });
+
     let mesasDisponibles = [];
     try {
       mesasDisponibles = await obtenerMesasDisponibles(
         fecha_reserva,
         hora_reserva,
-        parseFloat(duracion_estimada),
-        parseInt(numero_personas)
+        duracionFloat,
+        personasInt
       );
     } catch (error) {
-      console.error(
-        "Error al obtener mesas disponibles en error de procesarReserva:",
-        error
-      );
+      console.error("Error al obtener mesas disponibles al recargar:", error);
     }
 
     const datos = {
@@ -341,6 +340,101 @@ const procesarReserva = async (req, res) => {
       duraciones,
       mesasDisponibles,
     });
+  };
+
+  if (errores.length > 0) {
+    return recargarVistaConErrores();
+  }
+
+  let apertura = null;
+  let cierre = null;
+  const erroresHorario = [];
+
+  try {
+    const fecha = new Date(fecha_reserva + "T12:00:00Z");
+    const diaSemana = fecha.getUTCDay();
+
+    if (isNaN(fecha.getTime())) {
+      erroresHorario.push({
+        msg: "La fecha proporcionada no es válida. Use el formato AAAA-MM-DD.",
+      });
+    } else {
+      const horarioDia = await HorarioAtencion.findOne({
+        where: { dia_semana: diaSemana },
+        raw: true,
+      });
+
+      if (
+        !horarioDia ||
+        horarioDia.activo === 0 ||
+        !horarioDia.hora_apertura ||
+        !horarioDia.hora_cierre
+      ) {
+        erroresHorario.push({
+          msg: "El restaurante está cerrado o no tiene horarios definidos para la fecha seleccionada.",
+        });
+      } else {
+        apertura = horarioDia.hora_apertura.substring(0, 5);
+        cierre = horarioDia.hora_cierre.substring(0, 5);
+      }
+    }
+  } catch (error) {
+    console.error("Error al obtener horario dinámico:", error);
+    erroresHorario.push({
+      msg: "Error al verificar los horarios de atención.",
+    });
+  }
+
+  if (erroresHorario.length > 0) {
+    return recargarVistaConErrores(erroresHorario);
+  }
+
+  const fechaActual = new Date().toISOString().split("T")[0];
+  const horaActual = new Date().toTimeString().split(" ")[0].substring(0, 5);
+
+  if (
+    new Date(fecha_reserva + "T00:00:00") < new Date(fechaActual + "T00:00:00")
+  ) {
+    erroresHorario.push({
+      msg: "La fecha de la reserva no puede ser anterior al día de hoy.",
+    });
+  } else if (fecha_reserva === fechaActual && hora_reserva < horaActual) {
+    erroresHorario.push({
+      msg: "La hora de la reserva para el día de hoy no puede ser en el pasado.",
+    });
+  }
+
+  const [horasReserva, minutosReserva] = hora_reserva.split(":").map(Number);
+  const horaInicioTotalMinutos = horasReserva * 60 + minutosReserva;
+  const duracionMinutos = duracionFloat * 60;
+  const horaFinTotalMinutos = horaInicioTotalMinutos + duracionMinutos;
+
+  const horasFin = Math.floor(horaFinTotalMinutos / 60) % 24;
+  const minutosFin = horaFinTotalMinutos % 60;
+
+  const horaFinNuevaReservaString =
+    String(horasFin).padStart(2, "0") +
+    ":" +
+    String(minutosFin).padStart(2, "0");
+
+  if (hora_reserva < apertura) {
+    erroresHorario.push({
+      msg: `La reserva debe ser a partir de la hora de apertura (${apertura}).`,
+    });
+  }
+
+  if (
+    horaFinNuevaReservaString > cierre ||
+    horaFinTotalMinutos > 24 * 60 ||
+    (horaFinNuevaReservaString === "00:00" && cierre !== "00:00")
+  ) {
+    erroresHorario.push({
+      msg: `La reserva terminaría a las ${horaFinNuevaReservaString}. El restaurante cierra a las ${cierre}.`,
+    });
+  }
+
+  if (erroresHorario.length > 0) {
+    return recargarVistaConErrores(erroresHorario);
   }
 
   const usuarioId = res.locals.usuario.id;
@@ -348,39 +442,17 @@ const procesarReserva = async (req, res) => {
   const mesaIdAsignada = await buscarMesaDisponible(
     fecha_reserva,
     hora_reserva,
-    parseFloat(duracion_estimada),
-    parseInt(numero_personas),
+    duracionFloat,
+    personasInt,
     mesaId
   );
 
   if (!mesaIdAsignada) {
-    let mesasDisponibles = [];
-    try {
-      mesasDisponibles = await obtenerMesasDisponibles(
-        fecha_reserva,
-        hora_reserva,
-        parseFloat(duracion_estimada),
-        parseInt(numero_personas)
-      );
-    } catch (error) {
-      console.error(
-        "Error al obtener mesas disponibles en no mesa asignada:",
-        error
-      );
-    }
-
-    return res.render("usuario/crear-reserva", {
-      titulo: "Crear Nueva Reserva",
-      csrfToken: req.csrfToken(),
-      errores: [
-        {
-          msg: "La mesa que seleccionaste ya no está disponible (fue reservada por otro cliente o no cumple los requisitos). Por favor, elige otra opción de la lista.",
-        },
-      ],
-      datos: req.body,
-      duraciones,
-      mesasDisponibles,
-    });
+    return recargarVistaConErrores([
+      {
+        msg: "La mesa que seleccionaste ya no está disponible (fue reservada por otro cliente o no cumple los requisitos). Por favor, elige otra opción de la lista.",
+      },
+    ]);
   }
 
   try {
@@ -388,8 +460,8 @@ const procesarReserva = async (req, res) => {
       codigo_reserva: generarId(),
       fecha_reserva,
       hora_reserva,
-      numero_personas: parseInt(numero_personas),
-      duracion_estimada: parseFloat(duracion_estimada),
+      numero_personas: personasInt,
+      duracion_estimada: duracionFloat,
       notas: notas || "",
       clienteId: usuarioId,
       mesaId: mesaIdAsignada,
@@ -406,31 +478,9 @@ const procesarReserva = async (req, res) => {
   } catch (error) {
     console.error("Error al guardar la reserva del usuario:", error);
 
-    let mesasDisponibles = [];
-    try {
-      mesasDisponibles = await obtenerMesasDisponibles(
-        fecha_reserva,
-        hora_reserva,
-        parseFloat(duracion_estimada),
-        parseInt(numero_personas)
-      );
-    } catch (error) {
-      console.error(
-        "Error al obtener mesas disponibles en error al guardar:",
-        error
-      );
-    }
-
-    return res.render("usuario/crear-reserva", {
-      titulo: "Crear Nueva Reserva",
-      csrfToken: req.csrfToken(),
-      errores: [
-        { msg: "Hubo un error al procesar tu reserva. Intenta de nuevo." },
-      ],
-      datos: req.body,
-      duraciones,
-      mesasDisponibles,
-    });
+    return recargarVistaConErrores([
+      { msg: "Hubo un error al procesar tu reserva. Intenta de nuevo." },
+    ]);
   }
 };
 

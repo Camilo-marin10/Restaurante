@@ -91,13 +91,16 @@ const validarReserva = async (req, isUpdate = false) => {
   let apertura = null;
   let cierre = null;
 
+  const fechaActual = new Date().toISOString().split("T")[0];
+  const horaActual = new Date().toTimeString().split(" ")[0].substring(0, 5);
+
   try {
-    const fecha = new Date(fechaEstandarizada + "T00:00:00");
-    const diaSemana = fecha.getDay();
+    const fecha = new Date(fechaEstandarizada + "T12:00:00Z");
+    const diaSemana = fecha.getUTCDay();
 
     if (isNaN(fecha.getTime())) {
       erroresPersonalizados.push({
-        msg: "La fecha proporcionada no es válida. Use el formato AAAA-MM-DD.",
+        msg: "La fecha proporcionada no es válida.",
       });
     } else {
       const horarioDia = await HorarioAtencion.findOne({
@@ -124,15 +127,7 @@ const validarReserva = async (req, isUpdate = false) => {
     erroresPersonalizados.push({
       msg: "Error al verificar los horarios de atención.",
     });
-  }
-
-  if (!resultado.isEmpty() || erroresPersonalizados.length > 0) {
-    erroresPersonalizados = [...resultado.array(), ...erroresPersonalizados];
-    return { errores: erroresPersonalizados, datos: req.body };
-  }
-
-  const fechaActual = new Date().toISOString().split("T")[0];
-  const horaActual = new Date().toTimeString().split(" ")[0].substring(0, 5);
+  } // --- Validación de fecha y hora en el pasado ---
 
   if (
     new Date(fechaEstandarizada + "T00:00:00") <
@@ -151,24 +146,34 @@ const validarReserva = async (req, isUpdate = false) => {
     });
   }
 
+  if (!resultado.isEmpty() || erroresPersonalizados.length > 0) {
+    erroresPersonalizados = [...resultado.array(), ...erroresPersonalizados];
+    return { errores: erroresPersonalizados, datos: req.body };
+  } // --------------------------------------------------
+  const [horasReserva, minutosReserva] = hora_reserva.split(":").map(Number);
+  const horaInicioTotalMinutos = horasReserva * 60 + minutosReserva;
+
   const duracionMinutos = duracion_estimada * 60;
-  const horaInicioNuevaReserva = new Date(
-    `${fechaEstandarizada}T${hora_reserva}:00`
-  );
-  const horaFinNuevaReserva = new Date(
-    horaInicioNuevaReserva.getTime() + duracionMinutos * 60000
-  );
-  const horaFinNuevaReservaString = horaFinNuevaReserva
-    .toTimeString()
-    .split(" ")[0]
-    .substring(0, 5);
+  const horaFinTotalMinutos = horaInicioTotalMinutos + duracionMinutos;
+
+  const horasFin = Math.floor(horaFinTotalMinutos / 60) % 24;
+  const minutosFin = horaFinTotalMinutos % 60;
+
+  const horaFinNuevaReservaString =
+    String(horasFin).padStart(2, "0") +
+    ":" +
+    String(minutosFin).padStart(2, "0");
 
   if (hora_reserva < apertura) {
     erroresPersonalizados.push({
       msg: `La reserva debe ser a partir de la hora de apertura (${apertura}).`,
     });
   }
-  if (horaFinNuevaReservaString > cierre) {
+  if (
+    horaFinNuevaReservaString > cierre ||
+    horaFinTotalMinutos > 24 * 60 ||
+    (horaFinNuevaReservaString === "00:00" && cierre !== "00:00")
+  ) {
     erroresPersonalizados.push({
       msg: `La reserva terminaría a las ${horaFinNuevaReservaString}. El restaurante cierra a las ${cierre}.`,
     });
@@ -205,9 +210,16 @@ const validarReserva = async (req, isUpdate = false) => {
       horaInicioExistente.getTime() + duracionExistenteMinutos * 60000
     );
 
+    const horaInicioNuevaReserva = new Date(
+      `${fechaEstandarizada}T${hora_reserva}`
+    );
+    const horaFinNuevaReservaTemp = new Date(
+      horaInicioNuevaReserva.getTime() + duracionMinutos * 60000
+    );
+
     const solapamiento =
       horaInicioNuevaReserva < horaFinExistente &&
-      horaFinNuevaReserva > horaInicioExistente;
+      horaFinNuevaReservaTemp > horaInicioExistente;
 
     return solapamiento;
   });
