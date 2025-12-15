@@ -47,6 +47,10 @@ app.set("views", "./views");
 
 app.use(express.static("public"));
 
+app.get("/", (req, res) => {
+  res.redirect("/auth/login");
+});
+
 app.use("/auth", usuarioRoutes);
 
 app.use("/usuario", usuarioDashboardRoutes);
