@@ -11,7 +11,6 @@ const Mesa = db.define("mesas", {
   nombre: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    unique: true,
   },
   capacidad: {
     type: DataTypes.INTEGER,

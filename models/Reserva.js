@@ -13,7 +13,6 @@ const Reserva = db.define("reservas", {
   codigo_reserva: {
     type: DataTypes.STRING(20),
     allowNull: false,
-    unique: true,
   },
   fecha_reserva: {
     type: DataTypes.DATEONLY,

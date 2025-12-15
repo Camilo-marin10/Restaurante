@@ -15,7 +15,7 @@ const Usuario = db.define(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     rol: {
       type: DataTypes.STRING(20),
@@ -28,8 +28,10 @@ const Usuario = db.define(
   {
     hooks: {
       beforeCreate: async function (usuario) {
-        const salt = await bcrypt.genSalt(10);
-        usuario.password = await bcrypt.hash(usuario.password, salt);
+        if (usuario.password) {
+          const salt = await bcrypt.genSalt(10);
+          usuario.password = await bcrypt.hash(usuario.password, salt);
+        }
       },
     },
     scopes: {

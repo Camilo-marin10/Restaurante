@@ -130,6 +130,7 @@ const dashboardUsuario = async (req, res) => {
   const todayString = today.toISOString().split("T")[0];
 
   let reservasHoyUsuario = [];
+  let mesasActivas = [];
 
   try {
     reservasHoyUsuario = await Reserva.findAll({
@@ -143,14 +144,22 @@ const dashboardUsuario = async (req, res) => {
       include: [{ model: Mesa, as: "mesa", attributes: ["nombre"] }],
       order: [["hora_reserva", "ASC"]],
     });
+
+    mesasActivas = await Mesa.findAll({
+      where: {
+        estado: "Activa",
+      },
+      order: [["capacidad", "ASC"]],
+    });
   } catch (error) {
-    console.error("Error al buscar reservas de hoy para el usuario:", error);
+    console.error("Error en dashboardUsuario:", error);
   }
 
   res.render("usuario/dashboard", {
     titulo: "Mi Panel de Reservas",
     usuario: usuario,
     reservasHoyUsuario: reservasHoyUsuario,
+    mesasActivas: mesasActivas,
     csrfToken: req.csrfToken(),
   });
 };

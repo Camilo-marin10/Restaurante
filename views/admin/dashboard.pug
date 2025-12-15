@@ -2,28 +2,15 @@ extends ../layout/index
 
 block contenido
     div(class="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50")
-        h2(class="text-4xl font-extrabold text-red-800 mb-8 border-b pb-2 tracking-tight") Panel de Control
+        h2(class="text-4xl font-extrabold text-red-800 mb-8 border-b pb-2 tracking-tight") Panel de control
 
-        h3(class="text-2xl font-bold text-gray-700 mb-6") Operaciones de Hoy
+        
 
-        div(class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12")
-            div(class="bg-white overflow-hidden shadow-2xl rounded-xl p-6 border-l-4 border-red-600")
-                dt(class="text-sm font-medium text-gray-500 uppercase tracking-wider") Total de Reservas (Hoy)
-                dd(class="mt-1 text-4xl font-extrabold text-red-700") #{reservasHoy}
-            
-            div(class="bg-white overflow-hidden shadow-2xl rounded-xl p-6 border-l-4 border-orange-600")
-                dt(class="text-sm font-medium text-gray-500 uppercase tracking-wider") Capacidad Ocupada (Personas)
-                dd(class="mt-1 text-4xl font-extrabold text-orange-700") #{capacidadOcupada}
-            
-            div(class="bg-white overflow-hidden shadow-2xl rounded-xl p-6 border-l-4 border-red-800")
-                dt(class="text-sm font-medium text-gray-500 uppercase tracking-wider") No-Shows Reportados Hoy
-                dd(class="mt-1 text-4xl font-extrabold text-red-900") #{noShowsHoy}
-
-        h3(class="text-2xl font-bold text-gray-700 mb-6") Rendimiento y Análisis (90 Días)
+        h3(class="text-2xl font-bold text-gray-700 mb-6") Rendimiento y análisis (90 días)
 
         div(class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12")
             div(class="bg-white overflow-hidden shadow-xl rounded-lg p-5")
-                dt(class="text-sm font-medium text-gray-500") Reservas Exitosas
+                dt(class="text-sm font-medium text-gray-500") Reservas exitosas
                 dd(class="mt-1 text-3xl font-bold text-green-600") #{completadas90}
             
             div(class="bg-white overflow-hidden shadow-xl rounded-lg p-5")
@@ -31,17 +18,63 @@ block contenido
                 dd(class="mt-1 text-3xl font-bold text-red-600") #{tasaNoShows}%
             
             div(class="bg-white overflow-hidden shadow-xl rounded-lg p-5")
-                dt(class="text-sm font-medium text-gray-500") Total Personas Atendidas
+                dt(class="text-sm font-medium text-gray-500") Total personas atendidas
                 dd(class="mt-1 text-3xl font-bold text-red-700") #{capacidadAtendida90}
             
             div(class="bg-white overflow-hidden shadow-xl rounded-lg p-5")
-                dt(class="text-sm font-medium text-gray-500") Reservas Promedio/Día
+                dt(class="text-sm font-medium text-gray-500") Reservas promedio/Día
                 dd(class="mt-1 text-3xl font-bold text-gray-700") #{reservasPromedioDia}
 
             div(class="bg-white overflow-hidden shadow-xl rounded-lg p-5")
-                dt(class="text-sm font-medium text-gray-500") Reservas Canceladas
+                dt(class="text-sm font-medium text-gray-500") Reservas canceladas
                 dd(class="mt-1 text-3xl font-bold text-orange-600") #{canceladas90}
 
+
+        h2(class="text-2xl font-semibold text-gray-700 mt-8 mb-4 border-t pt-4") Mesas activas
+
+        div(class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12")
+            if mapaDeMesas.length
+                each mesa in mapaDeMesas
+                    // Lógica para asignar las clases de color
+                    - let bgColor = 'bg-gray-100'; 
+                    - let statusText = 'LIBRE';
+                    - let actionLink = '/admin/reservas/crear';
+                    - let textColor = 'text-gray-800'; 
+                    - let accentColor = 'bg-gray-300'; 
+
+                    if mesa.status === 'Reservada'
+                        - bgColor = 'bg-red-300'; 
+                        - statusText = 'RESERVADA';
+                        - actionLink = mesa.reservaId ? `/admin/reservas/editar/${mesa.reservaId}` : '/admin/reservas';
+                        - textColor = 'text-gray-900'; 
+                        - accentColor = 'bg-red-500'; 
+                    else if mesa.status === 'Ocupada'
+                        - bgColor = 'bg-red-600'; 
+                        - statusText = 'OCUPADA';
+                        - actionLink = mesa.reservaId ? `/admin/reservas/editar/${mesa.reservaId}` : '/admin/reservas';
+                        - textColor = 'text-white'; 
+                        - accentColor = 'bg-red-900'; 
+
+                   
+                    div(class=`p-4 rounded-lg shadow-lg transform transition duration-300 hover:scale-[1.02] ${bgColor}`)
+                        
+                        div(class="flex justify-between items-center mb-2")
+                            h3(class=`text-xl font-bold truncate ${textColor}`) #{mesa.nombre}
+                            p(class=`text-sm font-semibold px-2 py-1 rounded-full text-white ${accentColor}`) #{mesa.zona}
+
+                        div(class="mb-3")
+                            p(class=`text-sm font-semibold ${textColor}`) Capacidad: #{mesa.capacidad} personas
+                            p(class=`text-lg font-bold uppercase mt-1 ${textColor}`) Estado: #{statusText}
+
+                        p(class=`text-xs mb-3 ${textColor === 'text-white' ? 'text-white' : 'text-gray-600'}`) #{mesa.info ? mesa.info : 'Disponible para reserva/ocupación inmediata.'}
+                        
+                        a(class="block w-full mt-3 px-3 py-1 text-center text-sm font-semibold rounded-md shadow-sm bg-white text-red-600 border border-red-600 hover:bg-red-50" href=actionLink)
+                            = mesa.status === 'Libre' ? 'Crear Reserva' : 'Ver Detalles'
+
+            else
+                div(class="col-span-4 p-4 bg-gray-100 rounded-lg")
+                    p(class="text-center text-gray-600 font-semibold") No hay mesas activas para mostrar. Revisa el módulo de Gestión de Mesas.
+        
 
         div(class="bg-white shadow-2xl rounded-xl overflow-hidden border border-gray-100")
             div(class="px-6 py-5 sm:px-8 bg-red-50 border-b border-red-200")

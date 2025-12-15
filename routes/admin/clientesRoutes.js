@@ -1,8 +1,6 @@
 import express from "express";
 import {
   adminClientes,
-  crearCliente,
-  guardarCliente,
   editarCliente,
   guardarEdicionCliente,
   eliminarCliente,
@@ -11,9 +9,6 @@ import {
 const router = express.Router();
 
 router.get("/", adminClientes);
-
-router.get("/crear", crearCliente);
-router.post("/crear", guardarCliente);
 
 router.get("/editar/:id", editarCliente);
 router.post("/editar/:id", guardarEdicionCliente);

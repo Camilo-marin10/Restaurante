@@ -21,12 +21,19 @@ const adminDashboard = async (req, res) => {
   const tomorrowString = tomorrow.toISOString().split("T")[0];
 
   try {
+    const mesasActivas = await Mesa.findAll({
+      where: { estado: "Activa" },
+      attributes: ["id", "nombre", "capacidad", "zona"],
+      order: [["nombre", "ASC"]],
+    });
+
     const reservasEnRango = await Reserva.findAll({
       where: {
         fecha_reserva: {
           [Op.gte]: startOfToday,
           [Op.lte]: endOfRangeString,
         },
+        estado: { [Op.in]: ["Pendiente", "Confirmada", "En Curso"] },
       },
       include: [
         {
@@ -34,12 +41,79 @@ const adminDashboard = async (req, res) => {
           as: "cliente",
           attributes: ["nombre"],
         },
-        { model: Mesa, as: "mesa", attributes: ["nombre", "capacidad"] },
+        { model: Mesa, as: "mesa", attributes: ["nombre", "capacidad", "id"] },
       ],
       order: [
         ["fecha_reserva", "ASC"],
         ["hora_reserva", "ASC"],
       ],
+    });
+
+    const tiempoActual = new Date();
+
+    const reservasActivasAhora = {};
+
+    reservasEnRango.forEach((reserva) => {
+      if (reserva.fecha_reserva !== todayString) return;
+
+      const estadoActual = reserva.estado;
+      const horaInicio = new Date(
+        `${reserva.fecha_reserva}T${reserva.hora_reserva}`
+      );
+      const duracionMinutos = reserva.duracion_estimada * 60;
+      const horaFin = new Date(horaInicio.getTime() + duracionMinutos * 60000);
+
+      if (tiempoActual >= horaInicio && tiempoActual <= horaFin) {
+        const mesaNombre = reserva.mesa ? reserva.mesa.nombre : reserva.mesaId;
+
+        if (estadoActual === "En Curso") {
+          reservasActivasAhora[mesaNombre] = {
+            estado: "Ocupada",
+            cliente: reserva.cliente.nombre,
+            horaFin: horaFin.toTimeString().split(" ")[0].substring(0, 5),
+            reservaId: reserva.id,
+          };
+        } else if (
+          estadoActual === "Confirmada" ||
+          estadoActual === "Pendiente"
+        ) {
+          if (
+            !reservasActivasAhora[mesaNombre] ||
+            reservasActivasAhora[mesaNombre].estado !== "Ocupada"
+          ) {
+            reservasActivasAhora[mesaNombre] = {
+              estado: "Reservada",
+              cliente: reserva.cliente.nombre,
+              horaInicio: reserva.hora_reserva.substring(0, 5),
+              reservaId: reserva.id,
+            };
+          }
+        }
+      }
+    });
+
+    const mapaDeMesas = mesasActivas.map((mesa) => {
+      const reservaInfo = reservasActivasAhora[mesa.nombre];
+      let status = {
+        id: mesa.id,
+        nombre: mesa.nombre,
+        capacidad: mesa.capacidad,
+        zona: mesa.zona,
+        status: "Libre",
+        info: "",
+        reservaId: null,
+      };
+
+      if (reservaInfo) {
+        status.status = reservaInfo.estado;
+        status.reservaId = reservaInfo.reservaId;
+        if (reservaInfo.estado === "Ocupada") {
+          status.info = `Ocupada por ${reservaInfo.cliente}. Fin aprox. ${reservaInfo.horaFin}`;
+        } else if (reservaInfo.estado === "Reservada") {
+          status.info = `Reservada a las ${reservaInfo.horaInicio} por ${reservaInfo.cliente}`;
+        }
+      }
+      return status;
     });
 
     const estadisticasLP = await Reserva.findAll({
@@ -171,6 +245,7 @@ const adminDashboard = async (req, res) => {
       canceladas90: canceladas90 || 0,
 
       reservasDelDia: reservasDelDiaFormateadas,
+      mapaDeMesas: mapaDeMesas,
     });
   } catch (error) {
     console.error("Error FATAL al cargar datos del dashboard:", error);
@@ -186,6 +261,7 @@ const adminDashboard = async (req, res) => {
       reservasPromedioDia: 0,
       canceladas90: 0,
       reservasDelDia: [],
+      mapaDeMesas: [],
     });
   }
 };

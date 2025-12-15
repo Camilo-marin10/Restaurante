@@ -7,9 +7,13 @@ import dashboardRoutes from "./routes/admin/dashboardRoutes.js";
 import mesasRoutes from "./routes/admin/mesasRoutes.js";
 import clientesRoutes from "./routes/admin/clientesRoutes.js";
 import reservasRoutes from "./routes/admin/reservasRoutes.js";
+import horariosRoutes from "./routes/admin/horariosRoutes.js";
 import usuarioDashboardRoutes from "./routes/usuarioDashboardRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import { identificarUsuario } from "./middleware/usuarioMiddleware.js";
+
+import HorarioAtencion from "./models/HorarioAtencion.js";
+
 import db from "./config/db.js";
 
 const app = express();
@@ -51,6 +55,8 @@ app.use("/admin", dashboardRoutes);
 app.use("/admin/mesas", mesasRoutes);
 app.use("/admin/clientes", clientesRoutes);
 app.use("/admin/reservas", reservasRoutes);
+
+app.use("/admin/horarios", horariosRoutes);
 
 app.use("/", adminRoutes);
 

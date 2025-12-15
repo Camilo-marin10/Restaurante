@@ -21,7 +21,12 @@ const generarCodigo = () => {
 const obtenerDatosFormulario = async () => {
   const [mesas, usuarios] = await Promise.all([
     Mesa.findAll({ where: { estado: "Activa" } }),
-    Usuario.findAll(),
+    Usuario.findAll({
+      where: {
+        rol: "cliente",
+      },
+      order: [["nombre", "ASC"]],
+    }),
   ]);
 
   const duraciones = [

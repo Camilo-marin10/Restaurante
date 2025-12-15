@@ -28,7 +28,7 @@ block contenido
                                             let estadoClase = 'bg-gray-200 text-gray-700'; // Default
                                             if (reserva.estado === 'Confirmada') estadoClase = 'bg-green-100 text-green-800';
                                             else if (reserva.estado === 'Pendiente') estadoClase = 'bg-amber-100 text-amber-800';
-                                            else if (reserva.estado === 'En Curso') estadoClase = 'bg-red-100 text-red-800'; // Ahora rojo
+                                            else if (reserva.estado === 'En Curso') estadoClase = 'bg-red-100 text-red-800'; 
                                             else if (reserva.estado === 'Cancelada' || reserva.estado === 'No-Show') estadoClase = 'bg-red-200 text-red-900';
                                             else if (reserva.estado === 'Completada') estadoClase = 'bg-gray-200 text-gray-700';
                                         
@@ -37,7 +37,7 @@ block contenido
 
                                     td(class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium")
                                         if reserva.estado === 'Pendiente' || reserva.estado === 'Confirmada'
-                                            form(method="POST" action=`/usuario/reserva/cancelar/${reserva.id}` onsubmit="return confirm('⚠️ ¿Estás seguro de que deseas cancelar esta reserva? Esta acción es irreversible.');")
+                                            form(method="POST" action=`/usuario/reserva/cancelar/${reserva.id}` onsubmit="return confirm(' ¿Estás seguro de que deseas cancelar esta reserva? Esta acción es irreversible.');")
                                                 input(type="hidden" name="_csrf" value=csrfToken)
                                                 button(type="submit" class="text-red-600 hover:text-red-800 font-bold transition duration-200 transform hover:scale-105") Cancelar
                                         else

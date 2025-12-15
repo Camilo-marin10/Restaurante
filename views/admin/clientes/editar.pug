@@ -3,7 +3,7 @@ extends ../../layout/index
 block contenido
     div(class="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50")
         h1(class="text-4xl font-extrabold text-red-800 mb-2 tracking-tight")= titulo
-        p(class="text-lg text-gray-700 mb-8 border-b pb-4") Modifica la información del cliente.
+        p(class="text-lg text-gray-700 mb-8 border-b pb-4") Modifica la información del usuario y su rol.
         
         if errores
             div(class="max-w-md mx-auto mb-6")
@@ -17,22 +17,16 @@ block contenido
 
                 div
                     label(for="nombre" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Nombre
-                    input(id="nombre" name="nombre" type="text" placeholder="Nombre del Cliente" class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.nombre)
+                    input(id="nombre" name="nombre" type="text" placeholder="Nombre del Usuario" class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.nombre)
 
                 div
-                    label(for="apellido" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Apellido
-                    input(id="apellido" name="apellido" type="text" placeholder="Apellido del Cliente" class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.apellido)
-
-                div
-                    label(for="email" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Correo Electrónico (Opcional)
+                    label(for="email" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Correo Electrónico
                     input(id="email" name="email" type="email" placeholder="Correo Electrónico" class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.email)
-
-                div
-                    label(for="telefono" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Teléfono
-                    input(id="telefono" name="telefono" type="tel" placeholder="Número de Teléfono" class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm" value= datos.telefono)
                 
                 div
-                    label(for="notas" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Notas (Alergias, Preferencias, etc.)
-                    textarea(id="notas" name="notas" placeholder="Alergias, preferencias de mesa, etc." class="w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm h-24")= datos.notas
+                    label(for="rol" class="block text-sm uppercase text-gray-600 mb-2 font-bold") Rol del Usuario
+                    select(id="rol" name="rol" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-red-500 transition duration-150 shadow-sm")
+                        option(value="cliente" selected=datos.rol === 'cliente') Cliente
+                        option(value="admin" selected=datos.rol === 'admin') Administrador
 
                 input(type="submit" value="Guardar Cambios" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 cursor-pointer rounded-lg uppercase transition duration-300 shadow-lg transform hover:scale-[1.01]")
