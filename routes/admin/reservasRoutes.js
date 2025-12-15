@@ -1,4 +1,5 @@
 import express from "express";
+import { protegerRuta } from "../../middleware/usuarioMiddleware.js";
 import {
   adminReservas,
   crearReserva,
@@ -11,19 +12,16 @@ import {
 
 const router = express.Router();
 
-router.get("/", adminReservas);
+router.get("/", protegerRuta, adminReservas);
 
-// Crear
-router.get("/crear", crearReserva);
-router.post("/crear", guardarReserva);
+router.get("/crear", protegerRuta, crearReserva);
+router.post("/crear", protegerRuta, guardarReserva);
 
-// Editar
-router.get("/editar/:id", editarReserva);
-router.post("/editar/:id", guardarEdicionReserva);
+router.get("/editar/:id", protegerRuta, editarReserva);
+router.post("/editar/:id", protegerRuta, guardarEdicionReserva);
 
-router.post("/estado/:id", cambiarEstadoReserva);
+router.post("/estado/:id", protegerRuta, cambiarEstadoReserva);
 
-// Eliminar
-router.post("/eliminar/:id", eliminarReserva);
+router.post("/eliminar/:id", protegerRuta, eliminarReserva);
 
 export default router;

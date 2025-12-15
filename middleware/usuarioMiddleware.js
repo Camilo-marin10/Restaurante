@@ -35,4 +35,14 @@ const identificarUsuario = async (req, res, next) => {
   }
 };
 
-export { identificarUsuario };
+const protegerRuta = (req, res, next) => {
+  const usuarioId = req.session.usuarioId;
+
+  if (!usuarioId) {
+    return res.redirect("/auth/login");
+  }
+
+  return next();
+};
+
+export { identificarUsuario, protegerRuta };

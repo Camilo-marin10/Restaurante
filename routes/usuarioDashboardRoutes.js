@@ -1,5 +1,8 @@
 import express from "express";
-import { identificarUsuario } from "../middleware/usuarioMiddleware.js";
+import {
+  identificarUsuario,
+  protegerRuta,
+} from "../middleware/usuarioMiddleware.js";
 
 import {
   dashboardUsuario,
@@ -11,17 +14,13 @@ import {
 
 const router = express.Router();
 
-router.get("/dashboard", identificarUsuario, dashboardUsuario);
+router.get("/dashboard", protegerRuta, dashboardUsuario);
 
-router.get("/reserva/crear", identificarUsuario, crearReservaPublica);
-router.post("/reserva/crear", identificarUsuario, procesarReserva);
+router.get("/reserva/crear", protegerRuta, crearReservaPublica);
+router.post("/reserva/crear", protegerRuta, procesarReserva);
 
-router.get("/mis-reservas", identificarUsuario, misReservas);
+router.get("/mis-reservas", protegerRuta, misReservas);
 
-router.post(
-  "/reserva/cancelar/:id",
-  identificarUsuario,
-  cancelarReservaUsuario
-);
+router.post("/reserva/cancelar/:id", protegerRuta, cancelarReservaUsuario);
 
 export default router;

@@ -4,15 +4,11 @@ import {
   cambiarEstadoReserva,
 } from "../controllers/adminController.js";
 
-import { identificarUsuario } from "../middleware/usuarioMiddleware.js";
+import { protegerRuta } from "../middleware/usuarioMiddleware.js";
 
 const router = express.Router();
 
-router.get("/admin/reservas", identificarUsuario, listarReservasAdmin);
-router.post(
-  "/admin/reservas/:id/estado",
-  identificarUsuario,
-  cambiarEstadoReserva
-);
+router.get("/reservas", protegerRuta, listarReservasAdmin);
+router.post("/reservas/:id/estado", protegerRuta, cambiarEstadoReserva);
 
 export default router;

@@ -1,4 +1,5 @@
 import express from "express";
+import { protegerRuta } from "../../middleware/usuarioMiddleware.js";
 import {
   adminMesas,
   crearMesa,
@@ -9,13 +10,14 @@ import {
 } from "../../controllers/mesasController.js";
 
 const router = express.Router();
-router.get("/", adminMesas);
-router.get("/crear", crearMesa);
-router.post("/crear", guardarMesa);
 
-router.get("/editar/:id", editarMesa);
-router.post("/editar/:id", guardarEdicionMesa);
+router.get("/", protegerRuta, adminMesas);
+router.get("/crear", protegerRuta, crearMesa);
+router.post("/crear", protegerRuta, guardarMesa);
 
-router.post("/eliminar/:id", eliminarMesa);
+router.get("/editar/:id", protegerRuta, editarMesa);
+router.post("/editar/:id", protegerRuta, guardarEdicionMesa);
+
+router.post("/eliminar/:id", protegerRuta, eliminarMesa);
 
 export default router;
